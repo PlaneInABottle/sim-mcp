@@ -1,0 +1,25 @@
+# Source files (we only publish compiled dist/)
+src/
+tests/
+docs/
+
+# Config files
+tsconfig.json
+.env
+.env.example
+.editorconfig
+biome.json
+
+# Git files
+.git/
+.gitignore
+.github/
+
+# IDE files
+.idea/
+.vscode/
+
+# Misc
+*.log
+coverage/
+*.tsbuildinfo
