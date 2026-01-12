@@ -18,7 +18,7 @@ export const REMOVE_EDGE_OP_TOOL_NAME = 'remove_edge';
  * Tool description for MCP registration
  */
 export const REMOVE_EDGE_OP_DESCRIPTION =
-  'Remove an edge (connection) from a workflow. This disconnects two blocks.';
+  'Remove an edge (connection) from a workflow by its edge ID. This disconnects two blocks but does not delete the blocks themselves.';
 
 /**
  * JSON Schema for MCP registration

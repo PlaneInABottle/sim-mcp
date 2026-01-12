@@ -19,7 +19,7 @@ export const REMOVE_BLOCKS_TOOL_NAME = 'remove_blocks';
  * Tool description for MCP registration
  */
 export const REMOVE_BLOCKS_DESCRIPTION =
-  'Remove one or more blocks from a workflow. This also removes any edges connected to the removed blocks.';
+  'Remove one or more blocks from a workflow by their IDs. Also removes any edges connected to these blocks and their associated subflows (for loop/parallel blocks).';
 
 /**
  * JSON Schema for MCP registration

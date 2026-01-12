@@ -18,7 +18,7 @@ export const UPDATE_SUBFLOW_TOOL_NAME = 'update_subflow';
  * Tool description for MCP registration
  */
 export const UPDATE_SUBFLOW_DESCRIPTION =
-  'Update a subflow (loop or parallel) configuration in a workflow.';
+  'Update a subflow (loop or parallel) configuration. NOTE: Subflows must first be created via add_blocks with type "loop" or "parallel". This tool only modifies existing loop/parallel blocks. Use remove_blocks to delete them.';
 
 /**
  * JSON Schema for MCP registration

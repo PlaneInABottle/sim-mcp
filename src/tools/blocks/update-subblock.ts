@@ -17,7 +17,8 @@ export const UPDATE_SUBBLOCK_TOOL_NAME = 'update_subblock';
 /**
  * Tool description for MCP registration
  */
-export const UPDATE_SUBBLOCK_DESCRIPTION = 'Update a subblock value within a block in a workflow.';
+export const UPDATE_SUBBLOCK_DESCRIPTION =
+  'Update a subblock value within a block. Subblocks are configuration fields like "messages" for agent blocks, "url" for API blocks, etc. Use this to modify block-specific settings.';
 
 /**
  * JSON Schema for MCP registration

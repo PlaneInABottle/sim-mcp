@@ -19,7 +19,7 @@ export const ADD_BLOCKS_TOOL_NAME = 'add_blocks';
  * Tool description for MCP registration
  */
 export const ADD_BLOCKS_DESCRIPTION =
-  'Add one or more blocks to a workflow. Blocks are the building blocks of workflows and represent different actions or integrations. Can optionally include edges to connect the new blocks.';
+  'Add one or more blocks to a workflow. Blocks represent different actions (agent, api, condition, etc.). Loop and parallel blocks can be added with type "loop" or "parallel". Can optionally include edges to connect the new blocks.';
 
 /**
  * JSON Schema for MCP registration

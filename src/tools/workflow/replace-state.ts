@@ -19,7 +19,7 @@ export const REPLACE_WORKFLOW_STATE_TOOL_NAME = 'replace_workflow_state';
  * Tool description for MCP registration
  */
 export const REPLACE_WORKFLOW_STATE_DESCRIPTION =
-  'Replace the entire workflow state with new data. This is a powerful operation that overwrites all blocks, edges, and configuration. Use with caution.';
+  'Replace the entire workflow state (blocks, edges, variables, subflows). This overwrites all existing workflow content. Use with caution - typically used after export_workflow or for applying major structural changes.';
 
 /**
  * JSON Schema for MCP registration

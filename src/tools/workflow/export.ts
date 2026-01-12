@@ -19,7 +19,7 @@ export const EXPORT_WORKFLOW_TOOL_NAME = 'export_workflow';
  * Tool description for MCP registration
  */
 export const EXPORT_WORKFLOW_DESCRIPTION =
-  'Export a workflow as JSON for backup or sharing. Returns the complete workflow state including blocks, edges, and configuration. Use with import_workflow to clone or restore workflows.';
+  'Export a workflow as JSON containing complete state (blocks, edges, variables, subflows, configuration). Use with import_workflow to clone or restore workflows. Exported data is portable between workspaces.';
 
 /**
  * JSON Schema for MCP registration

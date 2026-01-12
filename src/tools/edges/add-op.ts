@@ -18,7 +18,7 @@ export const ADD_EDGE_OP_TOOL_NAME = 'add_edge';
  * Tool description for MCP registration
  */
 export const ADD_EDGE_OP_DESCRIPTION =
-  'Add a new edge to connect two blocks in a workflow. Edges define the data flow between blocks.';
+  'Add a new edge to connect two blocks in a workflow. Edges define the execution flow and data passing between blocks. Both source and target blocks must exist in the workflow.';
 
 /**
  * JSON Schema for MCP registration

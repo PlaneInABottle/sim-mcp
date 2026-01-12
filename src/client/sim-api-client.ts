@@ -716,7 +716,8 @@ export class SimApiClient {
       config?: Record<string, unknown>;
     }
   ): Promise<OperationResponse> {
-    // Subflows in sim backend only use 'update' operation for add/update/remove
+    // Subflows in sim backend only use 'update' operation
+    // NOTE: Subflows must already exist (created via addBlocks with type loop/parallel)
     return this.workflowOperation(workflowId, 'update', 'subflow', subflow);
   }
 

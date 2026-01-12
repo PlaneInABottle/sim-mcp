@@ -18,7 +18,7 @@ export const ADD_VARIABLE_TOOL_NAME = 'add_variable';
  * Tool description for MCP registration
  */
 export const ADD_VARIABLE_DESCRIPTION =
-  'Add a new variable to a workflow. Variables can store values that are accessible throughout the workflow execution.';
+  'Add a new workflow variable. Variables store values accessible throughout workflow execution via {{variableName}} syntax. Supported types: string, number, boolean, object, array, plain.';
 
 /**
  * JSON Schema for MCP registration

@@ -16,7 +16,7 @@ export const DELETE_WORKFLOW_TOOL_NAME = 'delete_workflow';
  * Tool description for MCP registration
  */
 export const DELETE_WORKFLOW_DESCRIPTION =
-  'Delete a workflow permanently. This action cannot be undone.';
+  'Delete a workflow permanently. This action cannot be undone. All blocks, edges, variables, and subflows in the workflow will be deleted.';
 
 /**
  * JSON Schema for delete workflow input (for MCP registration)

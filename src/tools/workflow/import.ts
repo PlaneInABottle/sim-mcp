@@ -19,7 +19,7 @@ export const IMPORT_WORKFLOW_TOOL_NAME = 'import_workflow';
  * Tool description for MCP registration
  */
 export const IMPORT_WORKFLOW_DESCRIPTION =
-  'Import a workflow from JSON data. Creates a new workflow in the specified workspace from exported workflow data. Use export_workflow to get the workflow data format.';
+  'Import a workflow from exported JSON data. Creates a new workflow in the specified workspace with the imported structure. Requires workspaceId and workflow state from export_workflow. Optionally override the workflow name.';
 
 /**
  * JSON Schema for MCP registration

@@ -17,7 +17,8 @@ export const REMOVE_VARIABLE_TOOL_NAME = 'remove_variable';
 /**
  * Tool description for MCP registration
  */
-export const REMOVE_VARIABLE_DESCRIPTION = 'Remove a variable from a workflow.';
+export const REMOVE_VARIABLE_DESCRIPTION =
+  'Remove a workflow variable by its ID. This permanently deletes the variable and any references to it in blocks will become undefined.';
 
 /**
  * JSON Schema for MCP registration

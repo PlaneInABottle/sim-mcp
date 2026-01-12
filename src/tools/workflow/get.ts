@@ -18,7 +18,7 @@ export const GET_WORKFLOW_TOOL_NAME = 'get_workflow';
  * Tool description for MCP registration
  */
 export const GET_WORKFLOW_DESCRIPTION =
-  'Get a single workflow with full details including blocks and edges.';
+  'Get a single workflow with full details including all blocks, edges, variables, and subflows. Use this to inspect workflow structure before making modifications.';
 
 /**
  * JSON Schema for get workflow input (for MCP registration)
