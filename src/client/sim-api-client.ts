@@ -337,16 +337,15 @@ export class SimApiClient {
       queryParams.offset = params.offset;
     }
 
-    const response = await this.get<{ workflows: Workflow[] } | Workflow[]>(
-      '/api/v1/admin/workflows',
+    const response = await this.get<{ data: Workflow[] } | Workflow[]>(
+      '/api/workflows',
       Object.keys(queryParams).length > 0 ? queryParams : undefined
     );
 
-    // Handle both response formats: { workflows: [...] } or [...]
     if (Array.isArray(response)) {
       return response;
     }
-    return response.workflows ?? [];
+    return response.data ?? [];
   }
 
   /**
@@ -356,7 +355,14 @@ export class SimApiClient {
    * @returns Workflow with blocks and edges
    */
   async getWorkflow(workflowId: string): Promise<WorkflowWithBlocks> {
-    return this.get<WorkflowWithBlocks>(`/api/v1/admin/workflows/${workflowId}`);
+    const response = await this.get<{ data: any }>(`/api/workflows/${workflowId}`);
+    const wf = response.data;
+
+    // User API returns normalized state (blocks as record, edges array) under `state`.
+    const blocks = Object.values((wf?.state?.blocks ?? {}) as Record<string, unknown>);
+    const edges = (wf?.state?.edges ?? []) as unknown[];
+
+    return { ...wf, blocks, edges } as WorkflowWithBlocks;
   }
 
   /**
@@ -370,7 +376,8 @@ export class SimApiClient {
     description?: string;
     workspaceId: string;
   }): Promise<Workflow> {
-    return this.post<Workflow>('/api/v1/admin/workflows', data);
+    const response = await this.post<{ data: Workflow }>('/api/workflows', data);
+    return response.data;
   }
 
   /**
@@ -384,7 +391,8 @@ export class SimApiClient {
     workflowId: string,
     data: { name?: string; description?: string }
   ): Promise<Workflow> {
-    return this.put<Workflow>(`/api/v1/admin/workflows/${workflowId}`, data);
+    const response = await this.put<{ data: Workflow }>(`/api/workflows/${workflowId}`, data);
+    return response.data;
   }
 
   /**
@@ -393,7 +401,7 @@ export class SimApiClient {
    * @param workflowId - The workflow ID
    */
   async deleteWorkflow(workflowId: string): Promise<void> {
-    await this.delete<void>(`/api/v1/admin/workflows/${workflowId}`);
+    await this.delete<void>(`/api/workflows/${workflowId}`);
   }
 
 
@@ -517,10 +525,7 @@ export class SimApiClient {
       broadcast: options?.broadcast,
     };
 
-    return this.post<OperationResponse>(
-      `/api/v1/admin/workflows/${workflowId}/operations`,
-      request
-    );
+    return this.post<OperationResponse>(`/api/workflows/${workflowId}/operations`, request);
   }
 
   // ==========================================
@@ -726,7 +731,22 @@ export class SimApiClient {
    * @returns Complete workflow export payload
    */
   async exportWorkflow(workflowId: string): Promise<WorkflowExportPayload> {
-    return this.get<WorkflowExportPayload>(`/api/v1/admin/workflows/${workflowId}/export`);
+    const response = await this.get<{ data: any }>(`/api/workflows/${workflowId}`);
+    const wf = response.data;
+
+    return {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      workflow: {
+        id: wf.id,
+        name: wf.name,
+        description: wf.description,
+        color: wf.color,
+        workspaceId: wf.workspaceId,
+        folderId: wf.folderId ?? undefined,
+      },
+      state: wf.state,
+    } as WorkflowExportPayload;
   }
 
   /**
@@ -736,7 +756,21 @@ export class SimApiClient {
    * @returns Import response with new workflow ID
    */
   async importWorkflow(request: ImportWorkflowRequest): Promise<ImportWorkflowResponse> {
-    return this.post<ImportWorkflowResponse>('/api/v1/admin/workflows/import', request);
+    const created = await this.createWorkflow({
+      name: request.name ?? request.workflow?.metadata?.name ?? 'Imported workflow',
+      description: (request.workflow as any)?.metadata?.description,
+      workspaceId: request.workspaceId,
+    });
+
+    await this.workflowOperation(created.id, 'replace-state', 'workflow', {
+      state: request.workflow,
+    });
+
+    return {
+      workflowId: created.id,
+      name: created.name,
+      success: true,
+    };
   }
 }
 

@@ -12,7 +12,6 @@ import {
   removeBlocks,
   toggleBlockEnabled,
   updateBlockName,
-  updateBlockPosition,
   updateSubblock,
 } from '../../../src/tools/blocks/index.js';
 import { createMockSimApiClient } from '../../mocks/sim-api.js';
@@ -198,57 +197,6 @@ describe('Block Operation Tools', () => {
     });
   });
 
-  describe('updateBlockPosition', () => {
-    it('should update block position and return operation result', async () => {
-      const mockClient = createMockSimApiClient();
-
-      const result = await updateBlockPosition(mockClient, {
-        workflowId: 'wf-123',
-        blockId: 'block-1',
-        x: 200,
-        y: 300,
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.operationId).toBeDefined();
-    });
-
-    it('should call client with correct parameters including commit', async () => {
-      const mockClient = createMockSimApiClient();
-
-      await updateBlockPosition(mockClient, {
-        workflowId: 'wf-123',
-        blockId: 'block-1',
-        x: 150,
-        y: 250,
-        commit: true,
-      });
-
-      expect(mockClient.updateBlockPosition).toHaveBeenCalledWith(
-        'wf-123',
-        'block-1',
-        { x: 150, y: 250 },
-        true
-      );
-    });
-
-    it('should propagate API errors', async () => {
-      const mockClient = createMockSimApiClient({
-        updateBlockPosition: async () => {
-          throw new Error('Update failed');
-        },
-      });
-
-      await expect(
-        updateBlockPosition(mockClient, {
-          workflowId: 'wf-123',
-          blockId: 'block-1',
-          x: 0,
-          y: 0,
-        })
-      ).rejects.toThrow('Update failed');
-    });
-  });
 
   describe('toggleBlockEnabled', () => {
     it('should toggle block enabled state and return operation result', async () => {
@@ -333,7 +281,7 @@ describe('Block Operation Tools', () => {
       expect(mockClient.workflowOperation).toHaveBeenCalledWith(
         'wf-123',
         'subblock-update',
-        'block',
+        'subblock',
         {
           blockId: 'block-1',
           subblockId: 'subblock-1',

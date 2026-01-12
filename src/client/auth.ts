@@ -5,10 +5,9 @@
  */
 
 /**
- * Authentication header name for sim API
- * Uses x-admin-key for admin API endpoints
+ * Authentication header name for sim API (API-key auth)
  */
-export const AUTH_HEADER = 'x-admin-key';
+export const AUTH_HEADER = 'x-api-key';
 
 /**
  * Authorization header for bearer tokens

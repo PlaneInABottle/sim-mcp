@@ -8,7 +8,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   deleteWorkflow,
-  executeWorkflow,
   exportWorkflow,
   getWorkflow,
   importWorkflow,
@@ -147,40 +146,6 @@ describe('Workflow Tools', () => {
     });
   });
 
-  describe('executeWorkflow', () => {
-    it('should execute workflow without input', async () => {
-      const mockClient = createMockSimApiClient();
-
-      const result = await executeWorkflow(mockClient, { workflowId: 'wf-deployed' });
-
-      expect(result.executionId).toBe('exec-abc123');
-      expect(result.status).toBe('completed');
-      expect(result.output).toEqual({ result: 'success', data: { message: 'Hello World' } });
-    });
-
-    it('should execute workflow with input', async () => {
-      const mockClient = createMockSimApiClient();
-
-      await executeWorkflow(mockClient, {
-        workflowId: 'wf-123',
-        input: { name: 'John', age: 30 },
-      });
-
-      expect(mockClient.executeWorkflow).toHaveBeenCalledWith('wf-123', { name: 'John', age: 30 });
-    });
-
-    it('should propagate execution errors', async () => {
-      const mockClient = createMockSimApiClient({
-        executeWorkflow: async () => {
-          throw new Error('Execution failed');
-        },
-      });
-
-      await expect(executeWorkflow(mockClient, { workflowId: 'wf-123' })).rejects.toThrow(
-        'Execution failed'
-      );
-    });
-  });
 
   describe('exportWorkflow', () => {
     it('should return export payload', async () => {

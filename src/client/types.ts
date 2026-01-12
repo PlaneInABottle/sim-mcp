@@ -279,7 +279,7 @@ export interface DeployResult {
 
 /**
  * Request body for workflow operations endpoint
- * POST /api/v1/admin/workflows/{id}/operations
+ * POST /api/workflows/{id}/operations
  */
 export interface OperationRequest {
   /** Operation type (e.g., 'batch-add-blocks', 'add', 'remove', 'update-name') */
