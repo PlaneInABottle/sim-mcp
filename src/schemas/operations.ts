@@ -59,43 +59,6 @@ export const exportWorkflowJsonSchema = {
   required: ['workflowId'],
 };
 
-/**
- * Import workflow input schema
- */
-export const ImportWorkflowInputSchema = z.object({
-  workspaceId: z.string().min(1, 'Workspace ID is required'),
-  folderId: z.string().optional(),
-  name: z.string().optional(),
-  workflow: z.any(), // Full workflow state object
-});
-export type ImportWorkflowInput = z.infer<typeof ImportWorkflowInputSchema>;
-
-/**
- * Import workflow JSON Schema for MCP registration
- */
-export const importWorkflowJsonSchema = {
-  type: 'object',
-  properties: {
-    workspaceId: {
-      type: 'string',
-      description: 'Target workspace ID for the imported workflow',
-    },
-    folderId: {
-      type: 'string',
-      description: 'Optional folder ID to place the workflow in',
-    },
-    name: {
-      type: 'string',
-      description: 'Optional name override for the workflow',
-    },
-    workflow: {
-      type: 'object',
-      description: 'Complete workflow state object to import (from export_workflow)',
-    },
-  },
-  required: ['workspaceId', 'workflow'],
-};
-
 // ==========================================
 // Block Operation Schemas
 // ==========================================

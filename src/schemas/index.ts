@@ -113,8 +113,6 @@ export {
   // Export/Import
   ExportWorkflowInputSchema,
   exportWorkflowJsonSchema,
-  ImportWorkflowInputSchema,
-  importWorkflowJsonSchema,
   // Block operations
   AddBlocksInputSchema,
   addBlocksJsonSchema,

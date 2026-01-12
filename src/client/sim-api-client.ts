@@ -395,16 +395,6 @@ export class SimApiClient {
     return await this.put<Workflow>(`/api/workflows/${workflowId}`, data);
   }
 
-  /**
-   * Delete a workflow permanently
-   *
-   * @param workflowId - The workflow ID
-   */
-  async deleteWorkflow(workflowId: string): Promise<void> {
-    await this.delete<void>(`/api/workflows/${workflowId}`);
-  }
-
-
   // ==========================================
   // Block API Methods
   // ==========================================
@@ -748,30 +738,6 @@ export class SimApiClient {
       },
       state: wf.state,
     } as WorkflowExportPayload;
-  }
-
-  /**
-   * Import a workflow from JSON
-   *
-   * @param request - Import request with workspace ID and workflow data
-   * @returns Import response with new workflow ID
-   */
-  async importWorkflow(request: ImportWorkflowRequest): Promise<ImportWorkflowResponse> {
-    const created = await this.createWorkflow({
-      name: request.name ?? request.workflow?.metadata?.name ?? 'Imported workflow',
-      description: (request.workflow as any)?.metadata?.description,
-      workspaceId: request.workspaceId,
-    });
-
-    await this.workflowOperation(created.id, 'replace-state', 'workflow', {
-      state: request.workflow,
-    });
-
-    return {
-      workflowId: created.id,
-      name: created.name,
-      success: true,
-    };
   }
 }
 

@@ -26,14 +26,10 @@ import {
   // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
-  DELETE_WORKFLOW_DESCRIPTION,
-  DELETE_WORKFLOW_TOOL_NAME,
   EXPORT_WORKFLOW_DESCRIPTION,
   EXPORT_WORKFLOW_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_TOOL_NAME,
-  IMPORT_WORKFLOW_DESCRIPTION,
-  IMPORT_WORKFLOW_TOOL_NAME,
   // Workflow tools
   LIST_WORKFLOWS_DESCRIPTION,
   LIST_WORKFLOWS_TOOL_NAME,
@@ -59,14 +55,10 @@ import {
   addEdgeOpInputSchema,
   addVariable,
   addVariableInputSchema,
-  deleteWorkflow,
-  deleteWorkflowInputSchema,
   exportWorkflow,
   exportWorkflowInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
-  importWorkflow,
-  importWorkflowInputSchema,
   listWorkflows,
   listWorkflowsInputSchema,
   removeBlocks,
@@ -158,16 +150,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: GET_WORKFLOW_TOOL_NAME,
       description: GET_WORKFLOW_DESCRIPTION,
       inputSchema: getWorkflowInputSchema,
-    },
-    {
-      name: DELETE_WORKFLOW_TOOL_NAME,
-      description: DELETE_WORKFLOW_DESCRIPTION,
-      inputSchema: deleteWorkflowInputSchema,
-    },
-    {
-      name: IMPORT_WORKFLOW_TOOL_NAME,
-      description: IMPORT_WORKFLOW_DESCRIPTION,
-      inputSchema: importWorkflowInputSchema,
     },
     {
       name: EXPORT_WORKFLOW_TOOL_NAME,
@@ -264,23 +246,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case GET_WORKFLOW_TOOL_NAME: {
           const input = args as { workflowId: string };
           const result = await getWorkflow(apiClient, input);
-          return createResponse(result);
-        }
-
-        case DELETE_WORKFLOW_TOOL_NAME: {
-          const input = args as { workflowId: string };
-          const result = await deleteWorkflow(apiClient, input);
-          return createResponse(result);
-        }
-
-        case IMPORT_WORKFLOW_TOOL_NAME: {
-          const input = args as {
-            workspaceId: string;
-            folderId?: string;
-            name?: string;
-            workflow: Record<string, unknown>;
-          };
-          const result = await importWorkflow(apiClient, input);
           return createResponse(result);
         }
 
