@@ -337,15 +337,13 @@ export class SimApiClient {
       queryParams.offset = params.offset;
     }
 
-    const response = await this.get<{ data: Workflow[] } | Workflow[]>(
+    // get() auto-unwraps { data: ... } response
+    const workflows = await this.get<Workflow[]>(
       '/api/workflows',
       Object.keys(queryParams).length > 0 ? queryParams : undefined
     );
 
-    if (Array.isArray(response)) {
-      return response;
-    }
-    return response.data ?? [];
+    return Array.isArray(workflows) ? workflows : [];
   }
 
   /**
@@ -355,14 +353,16 @@ export class SimApiClient {
    * @returns Workflow with blocks and edges
    */
   async getWorkflow(workflowId: string): Promise<WorkflowWithBlocks> {
-    const response = await this.get<{ data: any }>(`/api/workflows/${workflowId}`);
-    const wf = response.data;
+    // get() auto-unwraps { data: ... } response, so wf is the workflow object directly
+    const wf = await this.get<any>(`/api/workflows/${workflowId}`);
 
     // User API returns normalized state (blocks as record, edges array) under `state`.
-    const blocks = Object.values((wf?.state?.blocks ?? {}) as Record<string, unknown>);
-    const edges = (wf?.state?.edges ?? []) as unknown[];
+    // Extract and flatten blocks/edges to top level, exclude state from result
+    const { state, ...workflowMeta } = wf;
+    const blocks = Object.values((state?.blocks ?? {}) as Record<string, unknown>);
+    const edges = (state?.edges ?? []) as unknown[];
 
-    return { ...wf, blocks, edges } as WorkflowWithBlocks;
+    return { ...workflowMeta, blocks, edges } as WorkflowWithBlocks;
   }
 
   /**
@@ -376,8 +376,8 @@ export class SimApiClient {
     description?: string;
     workspaceId: string;
   }): Promise<Workflow> {
-    const response = await this.post<{ data: Workflow }>('/api/workflows', data);
-    return response.data;
+    // post() auto-unwraps { data: ... } response
+    return await this.post<Workflow>('/api/workflows', data);
   }
 
   /**
@@ -391,8 +391,8 @@ export class SimApiClient {
     workflowId: string,
     data: { name?: string; description?: string }
   ): Promise<Workflow> {
-    const response = await this.put<{ data: Workflow }>(`/api/workflows/${workflowId}`, data);
-    return response.data;
+    // put() auto-unwraps { data: ... } response
+    return await this.put<Workflow>(`/api/workflows/${workflowId}`, data);
   }
 
   /**
@@ -732,8 +732,8 @@ export class SimApiClient {
    * @returns Complete workflow export payload
    */
   async exportWorkflow(workflowId: string): Promise<WorkflowExportPayload> {
-    const response = await this.get<{ data: any }>(`/api/workflows/${workflowId}`);
-    const wf = response.data;
+    // get() auto-unwraps { data: ... } response
+    const wf = await this.get<any>(`/api/workflows/${workflowId}`);
 
     return {
       version: '1.0.0',
