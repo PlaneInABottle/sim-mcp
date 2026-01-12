@@ -64,16 +64,12 @@ export async function updateSubflow(
       type: input.type,
     });
 
-    // Call API client
-    const result: OperationResponse = await client.subflowOperation(
-      input.workflowId,
-      {
-        id: input.id,
-        type: input.type,
-        config: input.config,
-      },
-      'update'
-    );
+    // Call API client (subflows only use 'update' operation)
+    const result: OperationResponse = await client.subflowOperation(input.workflowId, {
+      id: input.id,
+      type: input.type,
+      config: input.config ?? {},
+    });
 
     logger.debug('Subflow updated successfully', {
       operation: 'update_subflow',

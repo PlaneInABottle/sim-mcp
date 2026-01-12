@@ -714,10 +714,10 @@ export class SimApiClient {
       id: string;
       type?: 'loop' | 'parallel';
       config?: Record<string, unknown>;
-    },
-    operation: 'add' | 'update' | 'remove'
+    }
   ): Promise<OperationResponse> {
-    return this.workflowOperation(workflowId, operation, 'subflow', subflow);
+    // Subflows in sim backend only use 'update' operation for add/update/remove
+    return this.workflowOperation(workflowId, 'update', 'subflow', subflow);
   }
 
   // ==========================================

@@ -23,9 +23,6 @@ import {
   // Edge tools
   ADD_EDGE_OP_DESCRIPTION,
   ADD_EDGE_OP_TOOL_NAME,
-  // Subflow tools
-  ADD_SUBFLOW_DESCRIPTION,
-  ADD_SUBFLOW_TOOL_NAME,
   // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
@@ -44,8 +41,6 @@ import {
   REMOVE_BLOCKS_TOOL_NAME,
   REMOVE_EDGE_OP_DESCRIPTION,
   REMOVE_EDGE_OP_TOOL_NAME,
-  REMOVE_SUBFLOW_DESCRIPTION,
-  REMOVE_SUBFLOW_TOOL_NAME,
   REMOVE_VARIABLE_DESCRIPTION,
   REMOVE_VARIABLE_TOOL_NAME,
   REPLACE_WORKFLOW_STATE_DESCRIPTION,
@@ -62,8 +57,6 @@ import {
   addBlocksInputSchema,
   addEdgeOp,
   addEdgeOpInputSchema,
-  addSubflow,
-  addSubflowInputSchema,
   addVariable,
   addVariableInputSchema,
   deleteWorkflow,
@@ -80,8 +73,6 @@ import {
   removeBlocksInputSchema,
   removeEdgeOp,
   removeEdgeOpInputSchema,
-  removeSubflow,
-  removeSubflowInputSchema,
   removeVariable,
   removeVariableInputSchema,
   replaceWorkflowState,
@@ -236,21 +227,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       description: REMOVE_VARIABLE_DESCRIPTION,
       inputSchema: removeVariableInputSchema,
     },
-    // Subflow tools (3 new)
-    {
-      name: ADD_SUBFLOW_TOOL_NAME,
-      description: ADD_SUBFLOW_DESCRIPTION,
-      inputSchema: addSubflowInputSchema,
-    },
+    // Subflow tool
     {
       name: UPDATE_SUBFLOW_TOOL_NAME,
       description: UPDATE_SUBFLOW_DESCRIPTION,
       inputSchema: updateSubflowInputSchema,
-    },
-    {
-      name: REMOVE_SUBFLOW_TOOL_NAME,
-      description: REMOVE_SUBFLOW_DESCRIPTION,
-      inputSchema: removeSubflowInputSchema,
     },
   ];
 
@@ -408,17 +389,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         }
 
         // Subflow tools
-        case ADD_SUBFLOW_TOOL_NAME: {
-          const input = args as {
-            workflowId: string;
-            id: string;
-            type: 'loop' | 'parallel';
-            config?: Record<string, unknown>;
-          };
-          const result = await addSubflow(apiClient, input);
-          return createResponse(result);
-        }
-
         case UPDATE_SUBFLOW_TOOL_NAME: {
           const input = args as {
             workflowId: string;
@@ -427,15 +397,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             config?: Record<string, unknown>;
           };
           const result = await updateSubflow(apiClient, input);
-          return createResponse(result);
-        }
-
-        case REMOVE_SUBFLOW_TOOL_NAME: {
-          const input = args as {
-            workflowId: string;
-            id: string;
-          };
-          const result = await removeSubflow(apiClient, input);
           return createResponse(result);
         }
 
