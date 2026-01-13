@@ -12,6 +12,7 @@ import axios, {
   type AxiosResponse,
 } from 'axios';
 
+import type { CustomTool, CustomToolInput } from '../schemas/custom-tools.js';
 import type { Block, Edge, Workflow, WorkflowWithBlocks } from '../schemas/workflow.js';
 import { getLogger, logApiError, logRequest } from '../utils/logger.js';
 import { AuthManager } from './auth.js';
@@ -25,8 +26,6 @@ import {
 import type {
   ApiResponse,
   HttpMethod,
-  ImportWorkflowRequest,
-  ImportWorkflowResponse,
   OperationRequest,
   OperationResponse,
   RequestOptions,
@@ -738,6 +737,60 @@ export class SimApiClient {
       },
       state: wf.state,
     } as WorkflowExportPayload;
+  }
+
+  // ==========================================
+  // Custom Tools API Methods
+  // ==========================================
+
+  /**
+   * List custom tools for a workspace
+   *
+   * @param params - Filter parameters (workspaceId or workflowId)
+   * @returns Array of custom tools
+   */
+  async listCustomTools(params?: {
+    workspaceId?: string;
+    workflowId?: string;
+  }): Promise<CustomTool[]> {
+    const queryParams: Record<string, string> = {};
+
+    if (params?.workspaceId) {
+      queryParams.workspaceId = params.workspaceId;
+    }
+    if (params?.workflowId) {
+      queryParams.workflowId = params.workflowId;
+    }
+
+    // get() auto-unwraps { data: ... } response
+    const tools = await this.get<CustomTool[]>(
+      '/api/tools/custom',
+      Object.keys(queryParams).length > 0 ? queryParams : undefined
+    );
+
+    return Array.isArray(tools) ? tools : [];
+  }
+
+  /**
+   * Create or update custom tools in a workspace
+   *
+   * @param params - Tools data and workspace ID
+   * @returns Array of all custom tools in the workspace after upsert
+   */
+  async upsertCustomTools(params: {
+    workspaceId: string;
+    tools: CustomToolInput[];
+  }): Promise<CustomTool[]> {
+    const response = await this.post<CustomTool[] | { data: CustomTool[] }>('/api/tools/custom', {
+      workspaceId: params.workspaceId,
+      tools: params.tools,
+    });
+
+    // Response may be wrapped in { success, data } format or be a direct array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    return response.data ?? [];
   }
 }
 

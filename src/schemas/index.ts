@@ -149,7 +149,6 @@ export {
 
 export type {
   ExportWorkflowInput,
-  ImportWorkflowInput,
   AddBlocksInput,
   RemoveBlocksInput,
   UpdateBlockNameInput,
@@ -166,3 +165,20 @@ export type {
   BlockDataForAdd,
   OperationResponseType,
 } from './operations.js';
+
+// Custom tools schemas
+export {
+  CustomToolSchema,
+  CustomToolInputSchema,
+  FunctionDefinitionSchema,
+  FunctionParametersSchema,
+  ToolSchemaDefinitionSchema,
+} from './custom-tools.js';
+
+export type {
+  CustomTool,
+  CustomToolInput,
+  FunctionDefinition,
+  FunctionParameters,
+  ToolSchemaDefinition,
+} from './custom-tools.js';

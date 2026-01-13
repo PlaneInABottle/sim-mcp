@@ -30,6 +30,9 @@ import {
   EXPORT_WORKFLOW_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_TOOL_NAME,
+  // Custom tools
+  LIST_CUSTOM_TOOLS_DESCRIPTION,
+  LIST_CUSTOM_TOOLS_TOOL_NAME,
   // Workflow tools
   LIST_WORKFLOWS_DESCRIPTION,
   LIST_WORKFLOWS_TOOL_NAME,
@@ -49,6 +52,8 @@ import {
   UPDATE_SUBBLOCK_TOOL_NAME,
   UPDATE_SUBFLOW_DESCRIPTION,
   UPDATE_SUBFLOW_TOOL_NAME,
+  UPSERT_CUSTOM_TOOLS_DESCRIPTION,
+  UPSERT_CUSTOM_TOOLS_TOOL_NAME,
   addBlocks,
   addBlocksInputSchema,
   addEdgeOp,
@@ -59,6 +64,8 @@ import {
   exportWorkflowInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
+  listCustomTools,
+  listCustomToolsInputSchema,
   listWorkflows,
   listWorkflowsInputSchema,
   removeBlocks,
@@ -77,6 +84,8 @@ import {
   updateSubblockInputSchema,
   updateSubflow,
   updateSubflowInputSchema,
+  upsertCustomTools,
+  upsertCustomToolsInputSchema,
 } from './tools/index.js';
 import { getLogger, initializeLogger } from './utils/logger.js';
 
@@ -214,6 +223,17 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: UPDATE_SUBFLOW_TOOL_NAME,
       description: UPDATE_SUBFLOW_DESCRIPTION,
       inputSchema: updateSubflowInputSchema,
+    },
+    // Custom tools
+    {
+      name: LIST_CUSTOM_TOOLS_TOOL_NAME,
+      description: LIST_CUSTOM_TOOLS_DESCRIPTION,
+      inputSchema: listCustomToolsInputSchema,
+    },
+    {
+      name: UPSERT_CUSTOM_TOOLS_TOOL_NAME,
+      description: UPSERT_CUSTOM_TOOLS_DESCRIPTION,
+      inputSchema: upsertCustomToolsInputSchema,
     },
   ];
 
@@ -362,6 +382,38 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             config?: Record<string, unknown>;
           };
           const result = await updateSubflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        // Custom tools
+        case LIST_CUSTOM_TOOLS_TOOL_NAME: {
+          const input = args as { workspaceId?: string; workflowId?: string };
+          const result = await listCustomTools(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UPSERT_CUSTOM_TOOLS_TOOL_NAME: {
+          const input = args as {
+            workspaceId: string;
+            tools: Array<{
+              id?: string;
+              title: string;
+              schema: {
+                type: 'function';
+                function: {
+                  name: string;
+                  description?: string;
+                  parameters: {
+                    type: string;
+                    properties: Record<string, unknown>;
+                    required?: string[];
+                  };
+                };
+              };
+              code: string;
+            }>;
+          };
+          const result = await upsertCustomTools(apiClient, input);
           return createResponse(result);
         }
 
