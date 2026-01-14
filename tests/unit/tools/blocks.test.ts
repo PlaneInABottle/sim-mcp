@@ -30,7 +30,7 @@ vi.mock('../../../src/utils/logger.js', () => ({
 
 describe('Block Operation Tools', () => {
   describe('listBlocks', () => {
-    it('should return all blocks when no filters provided', async () => {
+    it('should return block summaries by default (non-verbose mode)', async () => {
       const mockClient = createMockSimApiClient();
 
       const result = await listBlocks(mockClient, { workflowId: 'wf-123' });
@@ -38,6 +38,40 @@ describe('Block Operation Tools', () => {
       expect(result.blocks).toHaveLength(2);
       expect(result.total).toBe(2);
       expect(result.filtered).toBe(2);
+      // Verify summary format with position object
+      expect(result.blocks[0]).toHaveProperty('id');
+      expect(result.blocks[0]).toHaveProperty('type');
+      expect(result.blocks[0]).toHaveProperty('name');
+      expect(result.blocks[0]).toHaveProperty('position');
+      expect(result.blocks[0]).toHaveProperty('enabled');
+      expect(result.blocks[0].position).toHaveProperty('x');
+      expect(result.blocks[0].position).toHaveProperty('y');
+      // Verify no extra fields in summary mode
+      expect(result.blocks[0]).not.toHaveProperty('config');
+      expect(result.blocks[0]).not.toHaveProperty('subBlocks');
+      expect(result.blocks[0]).not.toHaveProperty('outputs');
+      expect(result.blocks[0]).not.toHaveProperty('positionX');
+      expect(result.blocks[0]).not.toHaveProperty('positionY');
+    });
+
+    it('should return full blocks when verbose=true', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, { workflowId: 'wf-123', verbose: true });
+
+      expect(result.blocks).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(2);
+      // Verify full block format with positionX/positionY
+      expect(result.blocks[0]).toHaveProperty('id');
+      expect(result.blocks[0]).toHaveProperty('type');
+      expect(result.blocks[0]).toHaveProperty('name');
+      expect(result.blocks[0]).toHaveProperty('positionX');
+      expect(result.blocks[0]).toHaveProperty('positionY');
+      expect(result.blocks[0]).toHaveProperty('enabled');
+      // Verify config is present for blocks that have it
+      const agentBlock = result.blocks.find((b) => b.type === 'agent');
+      expect(agentBlock).toHaveProperty('config');
     });
 
     it('should filter blocks by type', async () => {
@@ -169,6 +203,34 @@ describe('Block Operation Tools', () => {
       await expect(listBlocks(mockClient, { workflowId: 'not-found' })).rejects.toThrow(
         'Workflow not found'
       );
+    });
+
+    it('should return summaries when verbose=false explicitly', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, { workflowId: 'wf-123', verbose: false });
+
+      expect(result.blocks).toHaveLength(2);
+      // Verify summary format
+      expect(result.blocks[0]).toHaveProperty('position');
+      expect(result.blocks[0]).not.toHaveProperty('positionX');
+      expect(result.blocks[0]).not.toHaveProperty('config');
+    });
+
+    it('should return full blocks with filters when verbose=true', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        type: 'agent',
+        verbose: true,
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].type).toBe('agent');
+      // Verify full block format
+      expect(result.blocks[0]).toHaveProperty('positionX');
+      expect(result.blocks[0]).toHaveProperty('config');
     });
   });
 
@@ -393,7 +455,6 @@ describe('Block Operation Tools', () => {
       ).rejects.toThrow('Block not found');
     });
   });
-
 
   describe('toggleBlockEnabled', () => {
     it('should toggle block enabled state and return operation result', async () => {

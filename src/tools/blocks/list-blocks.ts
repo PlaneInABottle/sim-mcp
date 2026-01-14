@@ -49,6 +49,11 @@ export const listBlocksInputSchema = {
       type: 'boolean',
       description: 'Filter by enabled status (true = enabled only, false = disabled only)',
     },
+    verbose: {
+      type: 'boolean',
+      description:
+        'If true, returns full block details including config, subBlocks, and outputs. If false (default), returns only summary fields (id, type, name, position, enabled)',
+    },
   },
   required: ['workflowId'],
 };
@@ -62,15 +67,40 @@ export interface ListBlocksInput {
   name?: string;
   ids?: string[];
   enabled?: boolean;
+  verbose?: boolean;
 }
 
 /**
- * Output type for list blocks
+ * Summary type for block - lightweight representation with essential fields only
  */
-export interface ListBlocksOutput {
-  blocks: Block[];
+export interface BlockSummary {
+  id: string;
+  type: string;
+  name: string;
+  position: { x: number; y: number };
+  enabled: boolean;
+}
+
+/**
+ * Output type for list blocks - returns summaries by default, full blocks when verbose=true
+ */
+export interface ListBlocksOutput<T extends BlockSummary | Block = BlockSummary> {
+  blocks: T[];
   total: number;
   filtered: number;
+}
+
+/**
+ * Transforms a full Block to a lightweight BlockSummary
+ */
+function toBlockSummary(block: Block): BlockSummary {
+  return {
+    id: block.id,
+    type: block.type,
+    name: block.name,
+    position: { x: block.positionX, y: block.positionY },
+    enabled: block.enabled,
+  };
 }
 
 /**
@@ -78,12 +108,12 @@ export interface ListBlocksOutput {
  *
  * @param client - SimApiClient instance
  * @param input - List blocks parameters with optional filters
- * @returns Filtered blocks with total and filtered counts
+ * @returns Filtered blocks with total and filtered counts. Returns summaries by default, full blocks when verbose=true
  */
 export async function listBlocks(
   client: SimApiClient,
   input: ListBlocksInput
-): Promise<ListBlocksOutput> {
+): Promise<ListBlocksOutput<BlockSummary> | ListBlocksOutput<Block>> {
   const logger = getLogger();
 
   try {
@@ -95,6 +125,7 @@ export async function listBlocks(
         name: input.name,
         ids: input.ids,
         enabled: input.enabled,
+        verbose: input.verbose,
       },
     });
 
@@ -109,9 +140,7 @@ export async function listBlocks(
     // Filter by type
     if (input.type !== undefined) {
       const filterType = input.type.toLowerCase();
-      filteredBlocks = filteredBlocks.filter(
-        (block) => block.type.toLowerCase() === filterType
-      );
+      filteredBlocks = filteredBlocks.filter((block) => block.type.toLowerCase() === filterType);
     }
 
     // Filter by name (case-insensitive partial match)
@@ -138,10 +167,20 @@ export async function listBlocks(
       workflowId: input.workflowId,
       total,
       filtered: filteredBlocks.length,
+      verbose: input.verbose ?? false,
     });
 
+    // Return full blocks when verbose=true, otherwise return summaries
+    if (input.verbose === true) {
+      return {
+        blocks: filteredBlocks,
+        total,
+        filtered: filteredBlocks.length,
+      };
+    }
+
     return {
-      blocks: filteredBlocks,
+      blocks: filteredBlocks.map(toBlockSummary),
       total,
       filtered: filteredBlocks.length,
     };
