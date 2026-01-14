@@ -28,8 +28,16 @@ export {
   EXPORT_WORKFLOW_TOOL_NAME,
   exportWorkflow,
   exportWorkflowInputSchema,
+  stripBlockDetails,
 } from './export.js';
-export type { ExportWorkflowInput, ExportWorkflowOutput } from './export.js';
+export type {
+  ExportWorkflowInput,
+  ExportWorkflowOutput,
+  LightweightBlock,
+  LightweightExportPayload,
+  LightweightVariable,
+  LightweightWorkflowState,
+} from './export.js';
 
 // Replace workflow state tool
 export {

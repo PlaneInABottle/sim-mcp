@@ -109,7 +109,42 @@ export const mockOperationResponse: OperationResponse = {
 };
 
 /**
- * Sample export payload
+ * Sample block with full config for export (including subBlocks, data)
+ */
+export const mockExportBlockWithDetails: Record<string, unknown> = {
+  id: 'block-1',
+  type: 'agent',
+  name: 'AI Agent',
+  position: { x: 100, y: 100 },
+  enabled: true,
+  outputs: { response: { type: 'string' } },
+  subBlocks: {
+    model: {
+      id: 'model',
+      type: 'dropdown',
+      value: 'gpt-4',
+    },
+    systemPrompt: {
+      id: 'systemPrompt',
+      type: 'long-input',
+      value: 'You are a helpful assistant.',
+    },
+    messages: {
+      id: 'messages',
+      type: 'code',
+      value: '[{ role: "user", content: "Hello" }]',
+    },
+  },
+  data: {
+    config: {
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+  },
+};
+
+/**
+ * Sample export payload with full block details
  */
 export const mockExportPayload: WorkflowExportPayload = {
   version: '1.0.0',
@@ -121,10 +156,22 @@ export const mockExportPayload: WorkflowExportPayload = {
     workspaceId: 'ws-789',
   },
   state: {
-    blocks: { 'block-1': mockBlock },
-    edges: [],
+    blocks: { 'block-1': mockExportBlockWithDetails },
+    edges: [
+      {
+        id: 'edge-1',
+        source: 'block-1',
+        target: 'block-2',
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      },
+    ],
     loops: {},
     parallels: {},
+    variables: [
+      { id: 'var-1', name: 'apiKey', type: 'string', value: 'secret-key-123' },
+      { id: 'var-2', name: 'counter', type: 'number', value: 42 },
+    ],
   },
 };
 
