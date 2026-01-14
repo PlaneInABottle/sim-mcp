@@ -9,12 +9,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   addBlocks,
+  getBlock,
+  listBlocks,
   removeBlocks,
   toggleBlockEnabled,
   updateBlockName,
   updateSubblock,
 } from '../../../src/tools/blocks/index.js';
-import { createMockSimApiClient } from '../../mocks/sim-api.js';
+import { createMockSimApiClient, mockBlock, mockBlockWithConfig } from '../../mocks/sim-api.js';
 
 // Mock the logger to avoid output during tests
 vi.mock('../../../src/utils/logger.js', () => ({
@@ -27,6 +29,201 @@ vi.mock('../../../src/utils/logger.js', () => ({
 }));
 
 describe('Block Operation Tools', () => {
+  describe('listBlocks', () => {
+    it('should return all blocks when no filters provided', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.blocks).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(2);
+    });
+
+    it('should filter blocks by type', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        type: 'agent',
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].type).toBe('agent');
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(1);
+    });
+
+    it('should filter blocks by type case-insensitively', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        type: 'AGENT',
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].type).toBe('agent');
+    });
+
+    it('should filter blocks by name (case-insensitive partial match)', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        name: 'trigger',
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].name).toContain('Trigger');
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(1);
+    });
+
+    it('should filter blocks by specific IDs', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        ids: [mockBlock.id],
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].id).toBe(mockBlock.id);
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(1);
+    });
+
+    it('should filter blocks by enabled status', async () => {
+      const mockClient = createMockSimApiClient({
+        getWorkflow: async () => ({
+          id: 'wf-123',
+          userId: 'user-1',
+          workspaceId: 'ws-1',
+          name: 'Test',
+          createdAt: '2024-01-01',
+          updatedAt: '2024-01-01',
+          isDeployed: false,
+          blocks: [
+            { ...mockBlock, enabled: true },
+            { ...mockBlockWithConfig, enabled: false },
+          ],
+          edges: [],
+        }),
+      });
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        enabled: true,
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].enabled).toBe(true);
+      expect(result.total).toBe(2);
+      expect(result.filtered).toBe(1);
+    });
+
+    it('should combine multiple filters', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listBlocks(mockClient, {
+        workflowId: 'wf-123',
+        type: 'agent',
+        enabled: true,
+      });
+
+      expect(result.blocks).toHaveLength(1);
+      expect(result.blocks[0].type).toBe('agent');
+      expect(result.blocks[0].enabled).toBe(true);
+    });
+
+    it('should return empty array for workflow with no blocks', async () => {
+      const mockClient = createMockSimApiClient({
+        getWorkflow: async () => ({
+          id: 'wf-empty',
+          userId: 'user-1',
+          workspaceId: 'ws-1',
+          name: 'Empty Workflow',
+          createdAt: '2024-01-01',
+          updatedAt: '2024-01-01',
+          isDeployed: false,
+          blocks: [],
+          edges: [],
+        }),
+      });
+
+      const result = await listBlocks(mockClient, { workflowId: 'wf-empty' });
+
+      expect(result.blocks).toHaveLength(0);
+      expect(result.total).toBe(0);
+      expect(result.filtered).toBe(0);
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        getWorkflow: async () => {
+          throw new Error('Workflow not found');
+        },
+      });
+
+      await expect(listBlocks(mockClient, { workflowId: 'not-found' })).rejects.toThrow(
+        'Workflow not found'
+      );
+    });
+  });
+
+  describe('getBlock', () => {
+    it('should return block when found', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getBlock(mockClient, {
+        workflowId: 'wf-123',
+        blockId: mockBlock.id,
+      });
+
+      expect(result.block).toBeDefined();
+      expect(result.block.id).toBe(mockBlock.id);
+      expect(result.block.type).toBe(mockBlock.type);
+    });
+
+    it('should include full block details', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getBlock(mockClient, {
+        workflowId: 'wf-123',
+        blockId: mockBlockWithConfig.id,
+      });
+
+      expect(result.block).toBeDefined();
+      expect(result.block.id).toBe(mockBlockWithConfig.id);
+      expect(result.block.type).toBe(mockBlockWithConfig.type);
+      expect(result.block.config).toEqual(mockBlockWithConfig.config);
+    });
+
+    it('should throw error when block not found', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        getBlock(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'non-existent-block',
+        })
+      ).rejects.toThrow("Block with ID 'non-existent-block' not found in workflow 'wf-123'");
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        getWorkflow: async () => {
+          throw new Error('Workflow not found');
+        },
+      });
+
+      await expect(
+        getBlock(mockClient, { workflowId: 'not-found', blockId: 'block-1' })
+      ).rejects.toThrow('Workflow not found');
+    });
+  });
+
   describe('addBlocks', () => {
     it('should add blocks and return operation result', async () => {
       const mockClient = createMockSimApiClient();
