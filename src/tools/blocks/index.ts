@@ -4,15 +4,6 @@
  * Exports all block-related MCP tools.
  */
 
-// List blocks tool (query)
-export {
-  LIST_BLOCKS_DESCRIPTION,
-  LIST_BLOCKS_TOOL_NAME,
-  listBlocks,
-  listBlocksInputSchema,
-} from './list-blocks.js';
-export type { ListBlocksInput, ListBlocksOutput } from './list-blocks.js';
-
 // Get block tool (query)
 export {
   GET_BLOCK_DESCRIPTION,

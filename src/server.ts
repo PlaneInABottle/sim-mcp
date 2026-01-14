@@ -32,8 +32,6 @@ import {
   GET_BLOCK_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_TOOL_NAME,
-  LIST_BLOCKS_DESCRIPTION,
-  LIST_BLOCKS_TOOL_NAME,
   // Custom tools
   LIST_CUSTOM_TOOLS_DESCRIPTION,
   LIST_CUSTOM_TOOLS_TOOL_NAME,
@@ -70,8 +68,6 @@ import {
   getBlockInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
-  listBlocks,
-  listBlocksInputSchema,
   listCustomTools,
   listCustomToolsInputSchema,
   listWorkflows,
@@ -178,12 +174,7 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       description: REPLACE_WORKFLOW_STATE_DESCRIPTION,
       inputSchema: replaceWorkflowStateInputSchema,
     },
-    // Block tools (7 operation-based)
-    {
-      name: LIST_BLOCKS_TOOL_NAME,
-      description: LIST_BLOCKS_DESCRIPTION,
-      inputSchema: listBlocksInputSchema,
-    },
+    // Block tools (6 operation-based)
     {
       name: GET_BLOCK_TOOL_NAME,
       description: GET_BLOCK_DESCRIPTION,
@@ -300,18 +291,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         }
 
         // Block tools
-        case LIST_BLOCKS_TOOL_NAME: {
-          const input = args as {
-            workflowId: string;
-            type?: string;
-            name?: string;
-            ids?: string[];
-            enabled?: boolean;
-          };
-          const result = await listBlocks(apiClient, input);
-          return createResponse(result);
-        }
-
         case GET_BLOCK_TOOL_NAME: {
           const input = args as { workflowId: string; blockId: string };
           const result = await getBlock(apiClient, input);
