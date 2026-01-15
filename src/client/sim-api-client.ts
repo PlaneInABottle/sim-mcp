@@ -30,7 +30,17 @@ import type {
   OperationResponse,
   RequestOptions,
   WorkflowExportPayload,
+  WorkflowState,
 } from './types.js';
+
+/**
+ * Workflow payload returned by workflow endpoints.
+ */
+type WorkflowApiResponse = Workflow & {
+  state?: WorkflowState;
+  color?: string;
+  folderId?: string | null;
+};
 
 /**
  * Configuration for SimApiClient
@@ -353,7 +363,7 @@ export class SimApiClient {
    */
   async getWorkflow(workflowId: string): Promise<WorkflowWithBlocks> {
     // get() auto-unwraps { data: ... } response, so wf is the workflow object directly
-    const wf = await this.get<any>(`/api/workflows/${workflowId}`);
+    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`);
 
     // User API returns normalized state (blocks as record, edges array) under `state`.
     // Extract and flatten blocks/edges to top level, exclude state from result
@@ -722,7 +732,7 @@ export class SimApiClient {
    */
   async exportWorkflow(workflowId: string): Promise<WorkflowExportPayload> {
     // get() auto-unwraps { data: ... } response
-    const wf = await this.get<any>(`/api/workflows/${workflowId}`);
+    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`);
 
     return {
       version: '1.0.0',

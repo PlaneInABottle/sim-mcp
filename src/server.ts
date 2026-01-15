@@ -264,7 +264,7 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         }
 
         case GET_WORKFLOW_TOOL_NAME: {
-          const input = args as { workflowId: string };
+          const input = args as { workflowId: string; verbose?: boolean };
           const result = await getWorkflow(apiClient, input);
           return createResponse(result);
         }

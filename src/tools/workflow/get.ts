@@ -18,7 +18,7 @@ export const GET_WORKFLOW_TOOL_NAME = 'get_workflow';
  * Tool description for MCP registration
  */
 export const GET_WORKFLOW_DESCRIPTION =
-  'Get a single workflow with blocks and edges. By default returns lightweight block metadata (no config/subBlocks). Set verbose=true to include full block configuration for deeper inspection.';
+  'Get a single workflow with blocks and edges. By default returns lightweight block metadata (no config/subBlocks/data). Set verbose=true to include full block configuration for deeper inspection.';
 
 /**
  * JSON Schema for get workflow input (for MCP registration)
@@ -33,7 +33,7 @@ export const getWorkflowInputSchema = {
     verbose: {
       type: 'boolean',
       description:
-        'If true, include full block configuration (config/subBlocks). If false (default), return lightweight block metadata.',
+        'If true, include full block configuration (config/subBlocks/data). If false (default), return lightweight block metadata.',
     },
   },
   required: ['workflowId'],
@@ -55,19 +55,26 @@ export interface GetWorkflowInput {
 }
 
 /**
- * Create a lightweight workflow view by stripping block config/subBlocks.
+ * Create a lightweight workflow view by stripping block config/subBlocks/data.
  */
 type WorkflowBlock = NonNullable<WorkflowWithBlocks['blocks']>[number];
+type WorkflowBlockWithData = WorkflowBlock & { data?: Record<string, unknown> };
+type LightweightWorkflowBlock = Pick<
+  WorkflowBlockWithData,
+  'id' | 'type' | 'name' | 'positionX' | 'positionY' | 'enabled' | 'outputs'
+>;
 
-function stripBlockDetails(block: WorkflowBlock): WorkflowBlock {
+function stripBlockDetails(block: WorkflowBlockWithData): LightweightWorkflowBlock {
+  const { id, type, name, positionX, positionY, enabled, outputs } = block;
+
   return {
-    id: block.id,
-    type: block.type,
-    name: block.name,
-    positionX: block.positionX,
-    positionY: block.positionY,
-    enabled: block.enabled ?? true,
-    ...(block.outputs ? { outputs: block.outputs } : {}),
+    id,
+    type,
+    name,
+    positionX,
+    positionY,
+    enabled: enabled ?? true,
+    ...(outputs ? { outputs } : {}),
   };
 }
 

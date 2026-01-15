@@ -45,7 +45,7 @@ export const mockBlock: Block = {
 /**
  * Sample block with config
  */
-export const mockBlockWithConfig: Block = {
+export const mockBlockWithConfig: Block & { data?: Record<string, unknown> } = {
   id: 'block-2',
   type: 'agent',
   name: 'AI Agent',
@@ -55,6 +55,20 @@ export const mockBlockWithConfig: Block = {
   config: {
     model: 'gpt-4',
     temperature: 0.7,
+  },
+  subBlocks: [
+    {
+      id: 'systemPrompt',
+      type: 'long-input',
+      config: {
+        label: 'System Prompt',
+      },
+    },
+  ],
+  data: {
+    config: {
+      maxTokens: 1000,
+    },
   },
 };
 

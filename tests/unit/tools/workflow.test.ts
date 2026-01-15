@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type { Block } from '../../../src/schemas/workflow.js';
 import {
   getWorkflow,
   listWorkflows,
@@ -91,17 +92,26 @@ describe('Workflow Tools', () => {
       expect(result.workflow.blocks).toHaveLength(2);
       expect(result.workflow.edges).toHaveLength(1);
 
-      const configBlock = result.workflow.blocks?.find((block) => block.id === 'block-2');
+      const configBlock = result.workflow.blocks?.find((block) => block.id === 'block-2') as
+        | (Block & { data?: Record<string, unknown> })
+        | undefined;
+
       expect(configBlock?.config).toBeUndefined();
+      expect(configBlock?.subBlocks).toBeUndefined();
+      expect(configBlock?.data).toBeUndefined();
     });
 
     it('should include block config when verbose=true', async () => {
       const mockClient = createMockSimApiClient();
 
       const result = await getWorkflow(mockClient, { workflowId: 'wf-123', verbose: true });
-      const configBlock = result.workflow.blocks?.find((block) => block.id === 'block-2');
+      const configBlock = result.workflow.blocks?.find((block) => block.id === 'block-2') as
+        | (Block & { data?: Record<string, unknown> })
+        | undefined;
 
       expect(configBlock?.config).toBeDefined();
+      expect(configBlock?.subBlocks).toBeDefined();
+      expect(configBlock?.data).toBeDefined();
     });
 
     it('should call client with correct workflowId', async () => {
