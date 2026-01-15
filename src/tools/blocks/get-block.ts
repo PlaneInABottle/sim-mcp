@@ -19,7 +19,7 @@ export const GET_BLOCK_TOOL_NAME = 'get_block';
  */
 export const GET_BLOCK_DESCRIPTION =
   'Get a single block by ID from a workflow. Returns full block details including configuration and subblocks. ' +
-  'Use export_workflow() (without verbose) to see all blocks and connections first, then use this tool for detailed view of a specific block.';
+  'Use get_workflow (verbose=false) to see all blocks and connections first, then use this tool for detailed view of a specific block.';
 
 /**
  * JSON Schema for get block input (for MCP registration)

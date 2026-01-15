@@ -133,6 +133,7 @@ export type ListWorkflowsInput = z.infer<typeof ListWorkflowsInputSchema>;
  */
 export const GetWorkflowInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
+  verbose: z.boolean().optional(),
 });
 export type GetWorkflowInput = z.infer<typeof GetWorkflowInputSchema>;
 

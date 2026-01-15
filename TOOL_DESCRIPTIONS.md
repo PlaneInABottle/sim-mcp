@@ -28,7 +28,7 @@ Example:
 
 Example:
 - ❌ "List workflows for the authenticated user"
-- ✅ "List all workflows accessible to the authenticated user. Returns basic metadata without block/edge details. Use get_workflow to fetch full state"
+- ✅ "List all workflows accessible to the authenticated user. Returns basic metadata without block/edge details. Use get_workflow (verbose=true) to fetch full state"
 
 ### 4. Data Formats & Types
 **Before**: Generic "values"
@@ -121,27 +121,21 @@ to delete them.
 #### list_workflows
 ```
 List all workflows accessible to the authenticated user. Returns basic workflow metadata without 
-block/edge details. Use get_workflow to fetch full workflow state. Supports workspace filtering 
-and pagination.
+block/edge details. Use get_workflow (verbose=true for full block config) to inspect workflow structure. 
+Supports workspace filtering and pagination.
 ```
 
 #### get_workflow
 ```
-Get a single workflow with full details including all blocks, edges, variables, and subflows. Use this 
-to inspect workflow structure before making modifications.
-```
-
-#### export_workflow
-```
-Export a workflow as JSON containing complete state (blocks, edges, variables, subflows, configuration). 
-Use with import_workflow to clone or restore workflows. Exported data is portable between workspaces.
+Get a single workflow with blocks and edges. By default returns lightweight block metadata (no 
+config/subBlocks). Set verbose=true to include full block configuration.
 ```
 
 #### import_workflow
 ```
 Import a workflow from exported JSON data. Creates a new workflow in the specified workspace with the 
-imported structure. Requires workspaceId and workflow state from export_workflow. Optionally override 
-the workflow name.
+imported structure. Requires workspaceId and workflow state payload. Optionally override the workflow 
+name.
 ```
 
 #### delete_workflow
@@ -153,8 +147,8 @@ in the workflow will be deleted.
 #### replace_workflow_state
 ```
 Replace the entire workflow state (blocks, edges, variables, subflows). This overwrites all existing 
-workflow content. Use with caution - typically used after export_workflow or for applying major 
-structural changes.
+workflow content. Use with caution - typically used when you already have a full workflow state payload 
+or for applying major structural changes.
 ```
 
 ## Guidelines for Future Tool Descriptions

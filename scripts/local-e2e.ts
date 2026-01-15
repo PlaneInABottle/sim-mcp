@@ -14,14 +14,6 @@ import path from 'node:path';
 
 import { createSimApiClient } from '../src/client/index.ts';
 import {
-  deleteWorkflow,
-  exportWorkflow,
-  getWorkflow,
-  importWorkflow,
-  listWorkflows,
-  replaceWorkflowState,
-} from '../src/tools/workflow/index.ts';
-import {
   addBlocks,
   removeBlocks,
   toggleBlockEnabled,
@@ -29,8 +21,8 @@ import {
   updateSubblock,
 } from '../src/tools/blocks/index.ts';
 import { addEdgeOp, removeEdgeOp } from '../src/tools/edges/index.ts';
+import { updateSubflow } from '../src/tools/subflows/index.ts';
 import { addVariable, removeVariable } from '../src/tools/variables/index.ts';
-import { addSubflow, removeSubflow, updateSubflow } from '../src/tools/subflows/index.ts';
 
 function loadEnvLocal(): void {
   const envPath = path.resolve(process.cwd(), '.env.local');
@@ -45,7 +37,10 @@ function loadEnvLocal(): void {
 
     const key = trimmed.slice(0, eq).trim();
     let value = trimmed.slice(eq + 1).trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
 
@@ -75,7 +70,7 @@ async function main() {
   // NOTE: /api/workflows CRUD endpoints require session auth (cookies), not API keys.
   // Only /api/workflows/[id]/operations supports x-api-key.
   // For this test, we'll use a hardcoded workflow ID that you need to provide.
-  
+
   const tempWorkflowId = process.env.TEST_WORKFLOW_ID || 'default-agent';
   if (!tempWorkflowId || tempWorkflowId === 'default-agent') {
     console.error('\n⚠️  Set TEST_WORKFLOW_ID=<your-workflow-id> in .env.local');
@@ -89,22 +84,30 @@ async function main() {
   // 5) Blocks operations
   const newBlockId = `e2e-block-${Date.now()}`;
   const secondBlockId = `e2e-block-2-${Date.now()}`;
-  
+
   const added = await addBlocks(client, {
     workflowId: tempWorkflowId,
     blocks: [
       { id: newBlockId, type: 'agent', name: 'E2E Agent', position: { x: 100, y: 100 } },
-      { id: secondBlockId, type: 'agent', name: 'E2E Agent 2', position: { x: 300, y: 100 } }
+      { id: secondBlockId, type: 'agent', name: 'E2E Agent 2', position: { x: 300, y: 100 } },
     ],
   });
   console.log(`addBlocks: ok (op=${added.operationId})`);
 
   const newBlock = { id: newBlockId, name: 'E2E Agent' };
 
-  await updateBlockName(client, { workflowId: tempWorkflowId, blockId: newBlock.id, name: 'E2E Agent Renamed' });
+  await updateBlockName(client, {
+    workflowId: tempWorkflowId,
+    blockId: newBlock.id,
+    name: 'E2E Agent Renamed',
+  });
   console.log('updateBlockName: ok');
 
-  await toggleBlockEnabled(client, { workflowId: tempWorkflowId, blockId: newBlock.id, enabled: false });
+  await toggleBlockEnabled(client, {
+    workflowId: tempWorkflowId,
+    blockId: newBlock.id,
+    enabled: false,
+  });
   console.log('toggleBlockEnabled: ok');
 
   // updateSubblock with agent's 'messages' subblock
@@ -166,7 +169,10 @@ async function main() {
   console.log('removeBlocks (loop): ok');
 
   // 9) Remove blocks cleanup
-  await removeBlocks(client, { workflowId: tempWorkflowId, blockIds: [newBlock.id, secondBlockId] });
+  await removeBlocks(client, {
+    workflowId: tempWorkflowId,
+    blockIds: [newBlock.id, secondBlockId],
+  });
   console.log('removeBlocks: ok');
 
   console.log('\n✅ All operations tests passed!');

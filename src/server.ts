@@ -26,8 +26,6 @@ import {
   // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
-  EXPORT_WORKFLOW_DESCRIPTION,
-  EXPORT_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
   GET_BLOCK_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
@@ -62,8 +60,6 @@ import {
   addEdgeOpInputSchema,
   addVariable,
   addVariableInputSchema,
-  exportWorkflow,
-  exportWorkflowInputSchema,
   getBlock,
   getBlockInputSchema,
   getWorkflow,
@@ -153,7 +149,7 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       description: 'List available sim-mcp tools',
       inputSchema: { type: 'object', properties: {}, required: [] },
     },
-    // Workflow tools (4 working + 3 new)
+    // Workflow tools
     {
       name: LIST_WORKFLOWS_TOOL_NAME,
       description: LIST_WORKFLOWS_DESCRIPTION,
@@ -163,11 +159,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: GET_WORKFLOW_TOOL_NAME,
       description: GET_WORKFLOW_DESCRIPTION,
       inputSchema: getWorkflowInputSchema,
-    },
-    {
-      name: EXPORT_WORKFLOW_TOOL_NAME,
-      description: EXPORT_WORKFLOW_DESCRIPTION,
-      inputSchema: exportWorkflowInputSchema,
     },
     {
       name: REPLACE_WORKFLOW_STATE_TOOL_NAME,
@@ -275,12 +266,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case GET_WORKFLOW_TOOL_NAME: {
           const input = args as { workflowId: string };
           const result = await getWorkflow(apiClient, input);
-          return createResponse(result);
-        }
-
-        case EXPORT_WORKFLOW_TOOL_NAME: {
-          const input = args as { workflowId: string };
-          const result = await exportWorkflow(apiClient, input);
           return createResponse(result);
         }
 

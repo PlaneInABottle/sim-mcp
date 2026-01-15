@@ -125,7 +125,7 @@ sim-mcp/
 
 ### Tier 1: Essential
 - `list_workflows` - List all workflows
-- `get_workflow` - Get workflow details
+- `get_workflow` - Get workflow details (verbose=true for full block config)
 - `create_workflow` - Create new workflow
 - `update_workflow` - Update workflow metadata
 - `delete_workflow` - Delete workflow
@@ -155,7 +155,6 @@ sim-mcp/
 - `list_block_types` - Available block types
 - `get_block_schema` - Block type schema
 - `duplicate_workflow` - Clone workflow
-- `export_workflow` - Export as YAML
 - `import_workflow` - Import from YAML
 
 ## 🔐 Configuration

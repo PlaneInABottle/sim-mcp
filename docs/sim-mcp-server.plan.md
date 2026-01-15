@@ -309,7 +309,6 @@ sim-mcp/
 | `list_block_types` | List available block types | `{ category?: string }` | `{ blockTypes: BlockType[] }` |
 | `get_block_schema` | Get input schema for block type | `{ blockType: string }` | `{ schema: object }` |
 | `duplicate_workflow` | Clone a workflow | `{ workflowId: string, name?: string }` | `{ workflow: Workflow }` |
-| `export_workflow` | Export workflow as YAML | `{ workflowId: string }` | `{ yaml: string }` |
 | `import_workflow` | Import workflow from YAML | `{ yaml: string, name?: string }` | `{ workflow: Workflow }` |
 | `list_templates` | List workflow templates | `{ category?: string }` | `{ templates: Template[] }` |
 

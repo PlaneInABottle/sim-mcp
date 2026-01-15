@@ -27,23 +27,18 @@
 
 1. **`get_workflow`**: Calls `getWorkflow()` which fetches `/api/workflows/{id}` and returns:
    - Full workflow metadata (id, name, description, etc.)
-   - `blocks[]` - array of all blocks (flattened from Record)
+   - `blocks[]` - array of all blocks (verbose=true includes full config)
    - `edges[]` - array of all edges
-   
-2. **`export_workflow`**: Calls `exportWorkflow()` which fetches same endpoint and returns:
-   - Workflow metadata
-   - `state.blocks` - Record<blockId, block>
-   - `state.edges`, `state.loops`, `state.parallels`, `state.variables`
 
 ### Current Problems
 
-1. **No lightweight block access**: To get block info, must call `get_workflow` or `export_workflow` - both return full workflow
+1. **No lightweight block access**: To get block info, must call `get_workflow`, which returns full workflow
 2. **No filtering capability**: No way to filter blocks by type, name, or ID without client-side processing
 3. **Redundant data**: When LLM only needs blocks, it receives edges, variables, subflows unnecessarily
 
 ### Key Architecture Decisions
 
-**Q1: Use export_workflow + extract state.blocks, or query backend directly?**
+**Q1: Use get_workflow + extract blocks, or query backend directly?**
 - **Answer**: Use `getWorkflow()` (same as `get_workflow` tool) for efficiency
 - **Rationale**: 
   - Backend has no dedicated blocks-only endpoint

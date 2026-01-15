@@ -22,23 +22,6 @@ export {
 } from './get.js';
 export type { GetWorkflowInput, GetWorkflowOutput } from './get.js';
 
-// Export workflow tool
-export {
-  EXPORT_WORKFLOW_DESCRIPTION,
-  EXPORT_WORKFLOW_TOOL_NAME,
-  exportWorkflow,
-  exportWorkflowInputSchema,
-  stripBlockDetails,
-} from './export.js';
-export type {
-  ExportWorkflowInput,
-  ExportWorkflowOutput,
-  LightweightBlock,
-  LightweightExportPayload,
-  LightweightVariable,
-  LightweightWorkflowState,
-} from './export.js';
-
 // Replace workflow state tool
 export {
   REPLACE_WORKFLOW_STATE_DESCRIPTION,

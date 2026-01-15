@@ -18,7 +18,7 @@ export const LIST_WORKFLOWS_TOOL_NAME = 'list_workflows';
  * Tool description for MCP registration
  */
 export const LIST_WORKFLOWS_DESCRIPTION =
-  'List all workflows accessible to the authenticated user. Returns basic workflow metadata without block/edge details. Use get_workflow to fetch full workflow state. Supports workspace filtering and pagination.';
+  'List all workflows accessible to the authenticated user. Returns basic workflow metadata without block/edge details. Use get_workflow (verbose=true for full block config) to inspect workflow structure. Supports workspace filtering and pagination.';
 
 /**
  * JSON Schema for list workflows input (for MCP registration)
