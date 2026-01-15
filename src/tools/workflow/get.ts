@@ -18,7 +18,10 @@ export const GET_WORKFLOW_TOOL_NAME = 'get_workflow';
  * Tool description for MCP registration
  */
 export const GET_WORKFLOW_DESCRIPTION =
-  'Get a single workflow with blocks and edges. By default returns lightweight block metadata (no config/subBlocks/data). Set verbose=true to include full block configuration for deeper inspection.';
+  'Get a single workflow with blocks and edges. By default returns lightweight block metadata (no config/subBlocks/data). ' +
+  'Warning: verbose=true can produce very large responses for workflows with many blocks. ' +
+  'Prefer verbose=false (default) and use get_block for targeted block configuration details. ' +
+  'For examining specific block configurations, use get_block tool instead.';
 
 /**
  * JSON Schema for get workflow input (for MCP registration)
@@ -33,7 +36,7 @@ export const getWorkflowInputSchema = {
     verbose: {
       type: 'boolean',
       description:
-        'If true, include full block configuration (config/subBlocks/data). If false (default), return lightweight block metadata.',
+        'If true, include full block configuration (config/subBlocks/data). Warning: verbose=true can produce very large responses; prefer verbose=false (default) and use get_block for targeted inspection.',
     },
   },
   required: ['workflowId'],
