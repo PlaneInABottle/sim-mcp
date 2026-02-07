@@ -39,3 +39,21 @@ export {
   executeWorkflowInputSchema,
 } from './execute.js';
 export type { ExecuteWorkflowInput, ExecuteWorkflowOutput } from './execute.js';
+
+// Execution logs tools
+export {
+  GET_EXECUTION_LOGS_DESCRIPTION,
+  GET_EXECUTION_LOGS_TOOL_NAME,
+  getExecutionLogs,
+  getExecutionLogsInputSchema,
+  GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
+  GET_EXECUTION_LOG_DETAIL_TOOL_NAME,
+  getExecutionLogDetail,
+  getExecutionLogDetailInputSchema,
+} from './get-logs.js';
+export type {
+  GetExecutionLogsInput,
+  GetExecutionLogsOutput,
+  GetExecutionLogDetailInput,
+  GetExecutionLogDetailOutput,
+} from './get-logs.js';

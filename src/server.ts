@@ -31,6 +31,11 @@ import {
   EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
   GET_BLOCK_TOOL_NAME,
+  // Execution logs tools
+  GET_EXECUTION_LOGS_DESCRIPTION,
+  GET_EXECUTION_LOGS_TOOL_NAME,
+  GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
+  GET_EXECUTION_LOG_DETAIL_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_TOOL_NAME,
   // Custom tools
@@ -67,6 +72,10 @@ import {
   executeWorkflowInputSchema,
   getBlock,
   getBlockInputSchema,
+  getExecutionLogs,
+  getExecutionLogsInputSchema,
+  getExecutionLogDetail,
+  getExecutionLogDetailInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
   listCustomTools,
@@ -174,6 +183,17 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: EXECUTE_WORKFLOW_TOOL_NAME,
       description: EXECUTE_WORKFLOW_DESCRIPTION,
       inputSchema: executeWorkflowInputSchema,
+    },
+    // Execution logs tools
+    {
+      name: GET_EXECUTION_LOGS_TOOL_NAME,
+      description: GET_EXECUTION_LOGS_DESCRIPTION,
+      inputSchema: getExecutionLogsInputSchema,
+    },
+    {
+      name: GET_EXECUTION_LOG_DETAIL_TOOL_NAME,
+      description: GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
+      inputSchema: getExecutionLogDetailInputSchema,
     },
     // Block tools (6 operation-based)
     {
@@ -292,6 +312,37 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             triggerType?: string;
           };
           const result = await executeWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        // Execution logs tools
+        case GET_EXECUTION_LOGS_TOOL_NAME: {
+          const input = args as {
+            workspaceId: string;
+            workflowId?: string;
+            executionId?: string;
+            level?: 'info' | 'error';
+            startDate?: string;
+            endDate?: string;
+            minDurationMs?: number;
+            maxDurationMs?: number;
+            minCost?: number;
+            maxCost?: number;
+            trigger?: string;
+            limit?: number;
+            cursor?: string;
+            order?: 'desc' | 'asc';
+            details?: 'basic' | 'full';
+            includeTraceSpans?: boolean;
+            includeFinalOutput?: boolean;
+          };
+          const result = await getExecutionLogs(apiClient, input);
+          return createResponse(result);
+        }
+
+        case GET_EXECUTION_LOG_DETAIL_TOOL_NAME: {
+          const input = args as { logId: string };
+          const result = await getExecutionLogDetail(apiClient, input);
           return createResponse(result);
         }
 

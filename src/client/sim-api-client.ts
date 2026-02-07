@@ -767,6 +767,115 @@ export class SimApiClient {
   }
 
   // ==========================================
+  // Execution Logs API Methods
+  // ==========================================
+
+  /**
+   * List and filter workflow execution logs
+   *
+   * @param params - Filter and pagination parameters
+   * @returns Array of execution logs with pagination info
+   */
+  async getLogs(params: {
+    workspaceId: string;
+    workflowId?: string;
+    executionId?: string;
+    level?: 'info' | 'error';
+    startDate?: string;
+    endDate?: string;
+    minDurationMs?: number;
+    maxDurationMs?: number;
+    minCost?: number;
+    maxCost?: number;
+    trigger?: string;
+    limit?: number;
+    cursor?: string;
+    order?: 'desc' | 'asc';
+    details?: 'basic' | 'full';
+    includeTraceSpans?: boolean;
+    includeFinalOutput?: boolean;
+  }): Promise<{
+    data: Array<Record<string, unknown>>;
+    nextCursor?: string;
+    limits?: Record<string, unknown>;
+  }> {
+    const queryParams: Record<string, string | number | boolean> = {
+      workspaceId: params.workspaceId,
+    };
+
+    if (params.workflowId) {
+      queryParams.workflowIds = params.workflowId;
+    }
+    if (params.executionId) {
+      queryParams.executionId = params.executionId;
+    }
+    if (params.level) {
+      queryParams.level = params.level;
+    }
+    if (params.startDate) {
+      queryParams.startDate = params.startDate;
+    }
+    if (params.endDate) {
+      queryParams.endDate = params.endDate;
+    }
+    if (params.minDurationMs !== undefined) {
+      queryParams.minDurationMs = params.minDurationMs;
+    }
+    if (params.maxDurationMs !== undefined) {
+      queryParams.maxDurationMs = params.maxDurationMs;
+    }
+    if (params.minCost !== undefined) {
+      queryParams.minCost = params.minCost;
+    }
+    if (params.maxCost !== undefined) {
+      queryParams.maxCost = params.maxCost;
+    }
+    if (params.trigger) {
+      queryParams.triggers = params.trigger;
+    }
+    if (params.limit !== undefined) {
+      queryParams.limit = params.limit;
+    }
+    if (params.cursor) {
+      queryParams.cursor = params.cursor;
+    }
+    if (params.order) {
+      queryParams.order = params.order;
+    }
+    if (params.details) {
+      queryParams.details = params.details;
+    }
+    if (params.includeTraceSpans !== undefined) {
+      queryParams.includeTraceSpans = params.includeTraceSpans;
+    }
+    if (params.includeFinalOutput !== undefined) {
+      queryParams.includeFinalOutput = params.includeFinalOutput;
+    }
+
+    return this.get<{
+      data: Array<Record<string, unknown>>;
+      nextCursor?: string;
+      limits?: Record<string, unknown>;
+    }>('/api/v1/logs', queryParams);
+  }
+
+  /**
+   * Get full detail for a specific execution log
+   *
+   * @param logId - The execution log ID
+   * @returns Full log detail with execution data, workflow context, and cost breakdown
+   */
+  async getLogDetail(logId: string): Promise<{
+    data: Record<string, unknown>;
+    limits?: Record<string, unknown>;
+  }> {
+    return this.get<{
+      data: Record<string, unknown>;
+      limits?: Record<string, unknown>;
+    }>(`/api/v1/logs/${logId}`);
+  }
+
+  // ==========================================
   // Import/Export API Methods
   // ==========================================
 
