@@ -26,6 +26,9 @@ import {
   // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
+  // Create workflow tool
+  CREATE_WORKFLOW_DESCRIPTION,
+  CREATE_WORKFLOW_TOOL_NAME,
   // Execute workflow tool
   EXECUTE_WORKFLOW_DESCRIPTION,
   EXECUTE_WORKFLOW_TOOL_NAME,
@@ -68,6 +71,8 @@ import {
   addEdgeOpInputSchema,
   addVariable,
   addVariableInputSchema,
+  createWorkflow,
+  createWorkflowInputSchema,
   executeWorkflow,
   executeWorkflowInputSchema,
   getBlock,
@@ -183,6 +188,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: EXECUTE_WORKFLOW_TOOL_NAME,
       description: EXECUTE_WORKFLOW_DESCRIPTION,
       inputSchema: executeWorkflowInputSchema,
+    },
+    {
+      name: CREATE_WORKFLOW_TOOL_NAME,
+      description: CREATE_WORKFLOW_DESCRIPTION,
+      inputSchema: createWorkflowInputSchema,
     },
     // Execution logs tools
     {
@@ -312,6 +322,19 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             triggerType?: string;
           };
           const result = await executeWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case CREATE_WORKFLOW_TOOL_NAME: {
+          const input = args as {
+            name: string;
+            workspaceId: string;
+            description?: string;
+            color?: string;
+            folderId?: string;
+            sortOrder?: number;
+          };
+          const result = await createWorkflow(apiClient, input);
           return createResponse(result);
         }
 

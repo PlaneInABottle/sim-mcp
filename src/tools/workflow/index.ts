@@ -22,6 +22,15 @@ export {
 } from './get.js';
 export type { GetWorkflowInput, GetWorkflowOutput } from './get.js';
 
+// Create workflow tool
+export {
+  CREATE_WORKFLOW_DESCRIPTION,
+  CREATE_WORKFLOW_TOOL_NAME,
+  createWorkflow,
+  createWorkflowInputSchema,
+} from './create.js';
+export type { CreateWorkflowInput, CreateWorkflowOutput } from './create.js';
+
 // Replace workflow state tool
 export {
   REPLACE_WORKFLOW_STATE_DESCRIPTION,

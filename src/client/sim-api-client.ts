@@ -384,6 +384,9 @@ export class SimApiClient {
     name: string;
     description?: string;
     workspaceId: string;
+    color?: string;
+    folderId?: string;
+    sortOrder?: number;
   }): Promise<Workflow> {
     // post() auto-unwraps { data: ... } response
     return await this.post<Workflow>('/api/workflows', data);
