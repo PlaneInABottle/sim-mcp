@@ -26,6 +26,9 @@ import {
   // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
+  // Execute workflow tool
+  EXECUTE_WORKFLOW_DESCRIPTION,
+  EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
   GET_BLOCK_TOOL_NAME,
   GET_WORKFLOW_DESCRIPTION,
@@ -60,6 +63,8 @@ import {
   addEdgeOpInputSchema,
   addVariable,
   addVariableInputSchema,
+  executeWorkflow,
+  executeWorkflowInputSchema,
   getBlock,
   getBlockInputSchema,
   getWorkflow,
@@ -164,6 +169,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: REPLACE_WORKFLOW_STATE_TOOL_NAME,
       description: REPLACE_WORKFLOW_STATE_DESCRIPTION,
       inputSchema: replaceWorkflowStateInputSchema,
+    },
+    {
+      name: EXECUTE_WORKFLOW_TOOL_NAME,
+      description: EXECUTE_WORKFLOW_DESCRIPTION,
+      inputSchema: executeWorkflowInputSchema,
     },
     // Block tools (6 operation-based)
     {
@@ -272,6 +282,16 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case REPLACE_WORKFLOW_STATE_TOOL_NAME: {
           const input = args as { workflowId: string; state: Record<string, unknown> };
           const result = await replaceWorkflowState(apiClient, input);
+          return createResponse(result);
+        }
+
+        case EXECUTE_WORKFLOW_TOOL_NAME: {
+          const input = args as {
+            workflowId: string;
+            input?: Record<string, unknown>;
+            triggerType?: string;
+          };
+          const result = await executeWorkflow(apiClient, input);
           return createResponse(result);
         }
 

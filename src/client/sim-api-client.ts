@@ -721,6 +721,52 @@ export class SimApiClient {
   }
 
   // ==========================================
+  // Workflow Execution API Methods
+  // ==========================================
+
+  /**
+   * Execute a workflow
+   *
+   * @param workflowId - The workflow ID to execute
+   * @param options - Execution options (input, triggerType, useDraftState)
+   * @returns Execution result with output data
+   */
+  async executeWorkflow(
+    workflowId: string,
+    options?: {
+      input?: Record<string, unknown>;
+      triggerType?: string;
+      useDraftState?: boolean;
+    }
+  ): Promise<{
+    success: boolean;
+    executionId?: string;
+    output?: unknown;
+    error?: string;
+    metadata?: {
+      duration?: number;
+      startTime?: string;
+      endTime?: string;
+    };
+  }> {
+    const body: Record<string, unknown> = {};
+
+    if (options?.input) {
+      body.input = options.input;
+    }
+    if (options?.triggerType) {
+      body.triggerType = options.triggerType;
+    }
+    if (options?.useDraftState !== undefined) {
+      body.useDraftState = options.useDraftState;
+    }
+
+    return this.post(`/api/workflows/${workflowId}/execute`, body, {
+      timeout: 120000, // Workflow execution may take longer
+    });
+  }
+
+  // ==========================================
   // Import/Export API Methods
   // ==========================================
 
