@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { addEdgeOpJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -32,6 +33,7 @@ export interface AddEdgeOpOutput {
   success: boolean;
   operationId: string;
   edgeId: string;
+  warning?: string;
 }
 
 /**
@@ -93,10 +95,13 @@ export async function addEdgeOp(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'add_edge', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
       edgeId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to add edge', {

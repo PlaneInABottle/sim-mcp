@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { updateBlockNameJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -30,6 +31,7 @@ export const updateBlockNameInputSchema = updateBlockNameJsonSchema;
 export interface UpdateBlockNameOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -76,9 +78,12 @@ export async function updateBlockName(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'update_block_name', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to update block name', {

@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { addVariableJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -32,6 +33,7 @@ export interface AddVariableOutput {
   success: boolean;
   operationId: string;
   variableId: string;
+  warning?: string;
 }
 
 /**
@@ -91,10 +93,13 @@ export async function addVariable(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'add_variable', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
       variableId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to add variable', {

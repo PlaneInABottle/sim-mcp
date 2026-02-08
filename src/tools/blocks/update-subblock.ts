@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { updateSubblockJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -31,6 +32,7 @@ export const updateSubblockInputSchema = updateSubblockJsonSchema;
 export interface UpdateSubblockOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -84,9 +86,12 @@ export async function updateSubblock(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'update_subblock', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to update subblock', {

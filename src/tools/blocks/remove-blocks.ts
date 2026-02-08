@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { removeBlocksJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -34,6 +35,7 @@ export interface RemoveBlocksOutput {
   operationId: string;
   blocksRemoved: number;
   warnings?: string[];
+  warning?: string;
 }
 
 /**
@@ -78,11 +80,14 @@ export async function removeBlocks(
       ...(result.warnings?.length && { warnings: result.warnings }),
     });
 
+    const warning = checkBroadcastFailure(result, 'remove_blocks', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
       blocksRemoved,
       ...(result.warnings?.length && { warnings: result.warnings }),
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to remove blocks', {

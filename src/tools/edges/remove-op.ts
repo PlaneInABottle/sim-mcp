@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { removeEdgeOpJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -31,6 +32,7 @@ export const removeEdgeOpInputSchema = removeEdgeOpJsonSchema;
 export interface RemoveEdgeOpOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -74,9 +76,12 @@ export async function removeEdgeOp(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'remove_edge', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to remove edge', {

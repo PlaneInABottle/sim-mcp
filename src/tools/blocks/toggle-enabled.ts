@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { toggleBlockEnabledJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -31,6 +32,7 @@ export const toggleBlockEnabledInputSchema = toggleBlockEnabledJsonSchema;
 export interface ToggleBlockEnabledOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -78,9 +80,12 @@ export async function toggleBlockEnabled(
       enabled: input.enabled,
     });
 
+    const warning = checkBroadcastFailure(result, 'toggle_block_enabled', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to toggle block enabled state', {

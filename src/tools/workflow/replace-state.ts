@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { replaceWorkflowStateJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -32,6 +33,7 @@ export const replaceWorkflowStateInputSchema = replaceWorkflowStateJsonSchema;
 export interface ReplaceWorkflowStateOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -75,9 +77,12 @@ export async function replaceWorkflowState(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'replace_workflow_state', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to replace workflow state', {

@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { updateSubflowJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -31,6 +32,7 @@ export const updateSubflowInputSchema = updateSubflowJsonSchema;
 export interface UpdateSubflowOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -78,9 +80,12 @@ export async function updateSubflow(
       operationId: result.operationId,
     });
 
+    const warning = checkBroadcastFailure(result, 'update_subflow', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to update subflow', {

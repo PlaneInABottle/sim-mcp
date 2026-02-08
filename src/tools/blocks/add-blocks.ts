@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { addBlocksJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -33,6 +34,7 @@ export interface AddBlocksOutput {
   success: boolean;
   operationId: string;
   blocksAdded: number;
+  warning?: string;
 }
 
 /**
@@ -116,10 +118,13 @@ export async function addBlocks(
       blocksAdded: blocksWithIds.length,
     });
 
+    const warning = checkBroadcastFailure(result, 'add_blocks', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
       blocksAdded: blocksWithIds.length,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to add blocks', {

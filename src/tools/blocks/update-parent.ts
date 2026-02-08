@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { updateBlockParentJsonSchema } from '../../schemas/operations.js';
+import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
 
 /**
@@ -32,6 +33,7 @@ export const updateBlockParentInputSchema = updateBlockParentJsonSchema;
 export interface UpdateBlockParentOutput {
   success: boolean;
   operationId: string;
+  warning?: string;
 }
 
 /**
@@ -79,9 +81,12 @@ export async function updateBlockParent(
       parentId: input.parentId,
     });
 
+    const warning = checkBroadcastFailure(result, 'update_block_parent', input.workflowId);
+
     return {
       success: result.success,
       operationId: result.operationId,
+      ...(warning && { warning }),
     };
   } catch (error) {
     logger.error('Failed to update block parent', {
