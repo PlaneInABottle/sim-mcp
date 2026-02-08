@@ -198,7 +198,12 @@ export class SimApiClient {
       const status = axiosError.response.status;
       const apiError = axiosError.response.data?.error;
 
-      return mapHttpError(status, apiError?.message ?? axiosError.message, apiError?.details);
+      // Handle both string and object error formats from backend
+      const message = typeof apiError === 'string' 
+        ? apiError 
+        : apiError?.message ?? axiosError.message;
+      const details = typeof apiError === 'object' ? apiError?.details : undefined;
+      return mapHttpError(status, message, details);
     }
 
     // Return original error if not an axios error
