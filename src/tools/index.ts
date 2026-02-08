@@ -21,3 +21,6 @@ export * from './subflows/index.js';
 
 // Custom tools
 export * from './custom-tools/index.js';
+
+// Skills tools
+export * from './skills/index.js';

@@ -13,6 +13,7 @@ import axios, {
 } from 'axios';
 
 import type { CustomTool, CustomToolInput } from '../schemas/custom-tools.js';
+import type { Skill, SkillInput } from '../schemas/skills.js';
 import type { Block, Edge, Workflow, WorkflowWithBlocks } from '../schemas/workflow.js';
 import { getLogger, logApiError, logRequest } from '../utils/logger.js';
 import { AuthManager } from './auth.js';
@@ -978,6 +979,64 @@ export class SimApiClient {
       return response;
     }
     return response.data ?? [];
+  }
+
+  // ==========================================
+  // Skills API Methods
+  // ==========================================
+
+  /**
+   * List skills for a workspace
+   *
+   * @param params - Filter parameters (workspaceId required)
+   * @returns Array of skills
+   */
+  async listSkills(params: { workspaceId: string }): Promise<Skill[]> {
+    const queryParams: Record<string, string> = {
+      workspaceId: params.workspaceId,
+    };
+
+    // get() auto-unwraps { data: ... } response
+    const skills = await this.get<Skill[]>(
+      '/api/skills',
+      queryParams
+    );
+
+    return Array.isArray(skills) ? skills : [];
+  }
+
+  /**
+   * Create or update skills in a workspace (upsert)
+   *
+   * @param params - Skills data and workspace ID
+   * @returns Array of created/updated skills
+   */
+  async upsertSkills(params: {
+    workspaceId: string;
+    skills: SkillInput[];
+  }): Promise<Skill[]> {
+    const response = await this.post<Skill[] | { data: Skill[] }>('/api/skills', {
+      workspaceId: params.workspaceId,
+      skills: params.skills,
+    });
+
+    // Response may be wrapped in { success, data } format or be a direct array
+    if (Array.isArray(response)) {
+      return response;
+    }
+    return response.data ?? [];
+  }
+
+  /**
+   * Delete a skill from a workspace
+   *
+   * @param params - Skill ID and workspace ID
+   */
+  async deleteSkill(params: { id: string; workspaceId: string }): Promise<void> {
+    await this.delete<void>('/api/skills', {
+      id: params.id,
+      workspaceId: params.workspaceId,
+    });
   }
 }
 

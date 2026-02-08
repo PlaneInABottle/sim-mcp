@@ -182,3 +182,8 @@ export type {
   FunctionParameters,
   ToolSchemaDefinition,
 } from './custom-tools.js';
+
+// Skills schemas
+export { SkillSchema, SkillInputSchema } from './skills.js';
+
+export type { Skill, SkillInput } from './skills.js';

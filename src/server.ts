@@ -44,6 +44,15 @@ import {
   // Custom tools
   LIST_CUSTOM_TOOLS_DESCRIPTION,
   LIST_CUSTOM_TOOLS_TOOL_NAME,
+  // Skills tools
+  LIST_SKILLS_DESCRIPTION,
+  LIST_SKILLS_TOOL_NAME,
+  CREATE_SKILL_DESCRIPTION,
+  CREATE_SKILL_TOOL_NAME,
+  UPDATE_SKILL_DESCRIPTION,
+  UPDATE_SKILL_TOOL_NAME,
+  DELETE_SKILL_DESCRIPTION,
+  DELETE_SKILL_TOOL_NAME,
   // Workflow tools
   LIST_WORKFLOWS_DESCRIPTION,
   LIST_WORKFLOWS_TOOL_NAME,
@@ -109,6 +118,14 @@ import {
   updateSubflowInputSchema,
   upsertCustomTools,
   upsertCustomToolsInputSchema,
+  listSkills,
+  listSkillsInputSchema,
+  createSkill,
+  createSkillInputSchema,
+  updateSkill,
+  updateSkillInputSchema,
+  deleteSkill,
+  deleteSkillInputSchema,
 } from './tools/index.js';
 import { getLogger, initializeLogger } from './utils/logger.js';
 
@@ -283,6 +300,27 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: UPSERT_CUSTOM_TOOLS_TOOL_NAME,
       description: UPSERT_CUSTOM_TOOLS_DESCRIPTION,
       inputSchema: upsertCustomToolsInputSchema,
+    },
+    // Skills tools
+    {
+      name: LIST_SKILLS_TOOL_NAME,
+      description: LIST_SKILLS_DESCRIPTION,
+      inputSchema: listSkillsInputSchema,
+    },
+    {
+      name: CREATE_SKILL_TOOL_NAME,
+      description: CREATE_SKILL_DESCRIPTION,
+      inputSchema: createSkillInputSchema,
+    },
+    {
+      name: UPDATE_SKILL_TOOL_NAME,
+      description: UPDATE_SKILL_DESCRIPTION,
+      inputSchema: updateSkillInputSchema,
+    },
+    {
+      name: DELETE_SKILL_TOOL_NAME,
+      description: DELETE_SKILL_DESCRIPTION,
+      inputSchema: deleteSkillInputSchema,
     },
   ];
 
@@ -523,6 +561,42 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             }>;
           };
           const result = await upsertCustomTools(apiClient, input);
+          return createResponse(result);
+        }
+
+        // Skills tools
+        case LIST_SKILLS_TOOL_NAME: {
+          const input = args as { workspaceId: string };
+          const result = await listSkills(apiClient, input);
+          return createResponse(result);
+        }
+
+        case CREATE_SKILL_TOOL_NAME: {
+          const input = args as {
+            workspaceId: string;
+            name: string;
+            description: string;
+            content: string;
+          };
+          const result = await createSkill(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UPDATE_SKILL_TOOL_NAME: {
+          const input = args as {
+            workspaceId: string;
+            id: string;
+            name: string;
+            description: string;
+            content: string;
+          };
+          const result = await updateSkill(apiClient, input);
+          return createResponse(result);
+        }
+
+        case DELETE_SKILL_TOOL_NAME: {
+          const input = args as { workspaceId: string; id: string };
+          const result = await deleteSkill(apiClient, input);
           return createResponse(result);
         }
 
