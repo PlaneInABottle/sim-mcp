@@ -97,6 +97,10 @@ export async function createSkill(
 
     const createdSkill = skills[0];
 
+    if (!createdSkill) {
+      throw new Error('Skill creation failed: no skill returned from API');
+    }
+
     logger.debug('Skill created', {
       operation: 'create_skill',
       workspaceId: input.workspaceId,

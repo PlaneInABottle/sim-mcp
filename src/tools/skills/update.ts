@@ -17,7 +17,7 @@ export const UPDATE_SKILL_TOOL_NAME = 'update_skill';
  * Tool description for MCP registration
  */
 export const UPDATE_SKILL_DESCRIPTION =
-  'Update an existing skill in a workspace. Provide the skill ID and any fields to update (name, description, content). Name must be kebab-case if provided. Returns the updated skill.';
+  'Update an existing skill in a workspace. Provide the skill ID and all fields (name, description, content). Name must be kebab-case. Returns the updated skill.';
 
 /**
  * JSON Schema for update skill input (for MCP registration)
@@ -102,6 +102,10 @@ export async function updateSkill(
     });
 
     const updatedSkill = skills[0];
+
+    if (!updatedSkill) {
+      throw new Error('Skill update failed: no skill returned from API');
+    }
 
     logger.debug('Skill updated', {
       operation: 'update_skill',
