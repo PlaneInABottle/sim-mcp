@@ -13,6 +13,7 @@ import {
   removeBlocks,
   toggleBlockEnabled,
   updateBlockName,
+  updateBlockParent,
   updateSubblock,
 } from '../../../src/tools/blocks/index.js';
 import { createMockSimApiClient, mockBlock, mockBlockWithConfig } from '../../mocks/sim-api.js';
@@ -302,6 +303,62 @@ describe('Block Operation Tools', () => {
           enabled: true,
         })
       ).rejects.toThrow('Toggle failed');
+    });
+  });
+
+  describe('updateBlockParent', () => {
+    it('should set block parent to loop container', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await updateBlockParent(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        parentId: 'loop-1',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.operationId).toBeDefined();
+    });
+
+    it('should call client with correct parameters for setting parent', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await updateBlockParent(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'agent-1',
+        parentId: 'loop-1',
+      });
+
+      expect(mockClient.updateBlockParent).toHaveBeenCalledWith('wf-123', 'agent-1', 'loop-1');
+    });
+
+    it('should remove parent by passing null', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await updateBlockParent(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        parentId: null,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockClient.updateBlockParent).toHaveBeenCalledWith('wf-123', 'block-1', null);
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        updateBlockParent: async () => {
+          throw new Error('Update parent failed');
+        },
+      });
+
+      await expect(
+        updateBlockParent(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          parentId: 'loop-1',
+        })
+      ).rejects.toThrow('Update parent failed');
     });
   });
 

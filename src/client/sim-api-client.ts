@@ -621,6 +621,25 @@ export class SimApiClient {
   }
 
   /**
+   * Update a block's parent container
+   *
+   * @param workflowId - The workflow ID
+   * @param blockId - The block ID
+   * @param parentId - Parent container ID (loop/parallel) or null to remove
+   * @returns Operation response
+   */
+  async updateBlockParent(
+    workflowId: string,
+    blockId: string,
+    parentId: string | null
+  ): Promise<OperationResponse> {
+    return this.workflowOperation(workflowId, 'update-parent', 'block', {
+      id: blockId,
+      parentId,
+    });
+  }
+
+  /**
    * Add an edge via operations endpoint
    *
    * @param workflowId - The workflow ID

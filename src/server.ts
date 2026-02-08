@@ -59,6 +59,8 @@ import {
   TOGGLE_BLOCK_ENABLED_TOOL_NAME,
   UPDATE_BLOCK_NAME_DESCRIPTION,
   UPDATE_BLOCK_NAME_TOOL_NAME,
+  UPDATE_BLOCK_PARENT_DESCRIPTION,
+  UPDATE_BLOCK_PARENT_TOOL_NAME,
   UPDATE_SUBBLOCK_DESCRIPTION,
   UPDATE_SUBBLOCK_TOOL_NAME,
   UPDATE_SUBFLOW_DESCRIPTION,
@@ -99,6 +101,8 @@ import {
   toggleBlockEnabledInputSchema,
   updateBlockName,
   updateBlockNameInputSchema,
+  updateBlockParent,
+  updateBlockParentInputSchema,
   updateSubblock,
   updateSubblockInputSchema,
   updateSubflow,
@@ -230,6 +234,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: TOGGLE_BLOCK_ENABLED_TOOL_NAME,
       description: TOGGLE_BLOCK_ENABLED_DESCRIPTION,
       inputSchema: toggleBlockEnabledInputSchema,
+    },
+    {
+      name: UPDATE_BLOCK_PARENT_TOOL_NAME,
+      description: UPDATE_BLOCK_PARENT_DESCRIPTION,
+      inputSchema: updateBlockParentInputSchema,
     },
     {
       name: UPDATE_SUBBLOCK_TOOL_NAME,
@@ -414,6 +423,12 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case TOGGLE_BLOCK_ENABLED_TOOL_NAME: {
           const input = args as { workflowId: string; blockId: string; enabled: boolean };
           const result = await toggleBlockEnabled(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UPDATE_BLOCK_PARENT_TOOL_NAME: {
+          const input = args as { workflowId: string; blockId: string; parentId: string | null };
+          const result = await updateBlockParent(apiClient, input);
           return createResponse(result);
         }
 

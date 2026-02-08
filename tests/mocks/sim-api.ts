@@ -216,6 +216,7 @@ export function createMockSimApiClient(
     updateBlockPosition: [],
     updateBlockName: [],
     toggleBlockEnabled: [],
+    updateBlockParent: [],
     addEdgeOperation: [],
     removeEdgeOperation: [],
     replaceWorkflowState: [],
@@ -274,6 +275,10 @@ export function createMockSimApiClient(
     },
     toggleBlockEnabled: async (workflowId, blockId, enabled) => {
       callHistory.toggleBlockEnabled.push({ workflowId, blockId, enabled });
+      return mockOperationResponse;
+    },
+    updateBlockParent: async (workflowId, blockId, parentId) => {
+      callHistory.updateBlockParent.push({ workflowId, blockId, parentId });
       return mockOperationResponse;
     },
     addEdgeOperation: async (workflowId, edge) => {
@@ -337,6 +342,7 @@ export function createMockSimApiClient(
     updateBlockPosition: vi.fn(methods.updateBlockPosition),
     updateBlockName: vi.fn(methods.updateBlockName),
     toggleBlockEnabled: vi.fn(methods.toggleBlockEnabled),
+    updateBlockParent: vi.fn(methods.updateBlockParent),
     addEdgeOperation: vi.fn(methods.addEdgeOperation),
     removeEdgeOperation: vi.fn(methods.removeEdgeOperation),
     replaceWorkflowState: vi.fn(methods.replaceWorkflowState),
@@ -399,6 +405,11 @@ export interface MockSimApiClientMethods {
     blockId: string,
     enabled: boolean
   ) => Promise<OperationResponse>;
+  updateBlockParent: (
+    workflowId: string,
+    blockId: string,
+    parentId: string | null
+  ) => Promise<OperationResponse>;
   addEdgeOperation: (
     workflowId: string,
     edge: Record<string, unknown>
@@ -453,6 +464,7 @@ export interface MockCallHistory {
   }>;
   updateBlockName: Array<{ workflowId: string; blockId: string; name: string }>;
   toggleBlockEnabled: Array<{ workflowId: string; blockId: string; enabled: boolean }>;
+  updateBlockParent: Array<{ workflowId: string; blockId: string; parentId: string | null }>;
   addEdgeOperation: Array<{ workflowId: string; edge: Record<string, unknown> }>;
   removeEdgeOperation: Array<{ workflowId: string; edgeId: string }>;
   replaceWorkflowState: Array<{ workflowId: string; state: Record<string, unknown> }>;

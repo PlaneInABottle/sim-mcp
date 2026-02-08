@@ -255,6 +255,39 @@ export const toggleBlockEnabledJsonSchema = {
 };
 
 /**
+ * Update block parent input schema
+ */
+export const UpdateBlockParentInputSchema = z.object({
+  workflowId: z.string().min(1, 'Workflow ID is required'),
+  blockId: z.string().min(1, 'Block ID is required'),
+  parentId: z.string().nullable(),
+});
+export type UpdateBlockParentInput = z.infer<typeof UpdateBlockParentInputSchema>;
+
+/**
+ * Update block parent JSON Schema for MCP registration
+ */
+export const updateBlockParentJsonSchema = {
+  type: 'object',
+  properties: {
+    workflowId: {
+      type: 'string',
+      description: 'ID of the workflow containing the block',
+    },
+    blockId: {
+      type: 'string',
+      description: 'ID of the block to update',
+    },
+    parentId: {
+      type: ['string', 'null'],
+      description:
+        'ID of the parent container (loop/parallel block) to nest inside, or null to remove from parent',
+    },
+  },
+  required: ['workflowId', 'blockId', 'parentId'],
+};
+
+/**
  * Update subblock input schema
  */
 export const UpdateSubblockInputSchema = z.object({

@@ -49,6 +49,15 @@ export {
 } from './toggle-enabled.js';
 export type { ToggleBlockEnabledInput, ToggleBlockEnabledOutput } from './toggle-enabled.js';
 
+// Update block parent tool
+export {
+  UPDATE_BLOCK_PARENT_DESCRIPTION,
+  UPDATE_BLOCK_PARENT_TOOL_NAME,
+  updateBlockParent,
+  updateBlockParentInputSchema,
+} from './update-parent.js';
+export type { UpdateBlockParentInput, UpdateBlockParentOutput } from './update-parent.js';
+
 // Update subblock tool
 export {
   UPDATE_SUBBLOCK_DESCRIPTION,

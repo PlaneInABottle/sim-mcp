@@ -73,6 +73,11 @@ Update the display name of a block in a workflow.
 Enable or disable a block in a workflow. Disabled blocks are skipped during workflow execution.
 ```
 
+#### update_block_parent
+```
+Set or remove a block's parent container (for nesting inside loop/parallel blocks).
+```
+
 #### update_subblock
 ```
 Update a subblock value within a block. Subblocks are configuration fields like "messages" for agent blocks, 
