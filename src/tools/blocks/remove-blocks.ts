@@ -33,6 +33,7 @@ export interface RemoveBlocksOutput {
   success: boolean;
   operationId: string;
   blocksRemoved: number;
+  warnings?: string[];
 }
 
 /**
@@ -66,17 +67,22 @@ export async function removeBlocks(
     // Call API client
     const result: OperationResponse = await client.removeBlocks(input.workflowId, input.blockIds);
 
+    // Use accurate count from API response (falls back to request length for backwards compat)
+    const blocksRemoved = result.blocksRemoved ?? input.blockIds.length;
+
     logger.debug('Blocks removed successfully', {
       operation: 'remove_blocks',
       workflowId: input.workflowId,
       operationId: result.operationId,
-      blocksRemoved: input.blockIds.length,
+      blocksRemoved,
+      ...(result.warnings?.length && { warnings: result.warnings }),
     });
 
     return {
       success: result.success,
       operationId: result.operationId,
-      blocksRemoved: input.blockIds.length,
+      blocksRemoved,
+      ...(result.warnings?.length && { warnings: result.warnings }),
     };
   } catch (error) {
     logger.error('Failed to remove blocks', {

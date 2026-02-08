@@ -306,6 +306,10 @@ export interface OperationResponse {
   timestamp: number;
   /** Whether WebSocket broadcast was sent */
   broadcastSent: boolean;
+  /** Accurate count of blocks actually removed (for batch remove operations) */
+  blocksRemoved?: number;
+  /** Warnings for non-existent or otherwise skipped IDs */
+  warnings?: string[];
 }
 
 /**
