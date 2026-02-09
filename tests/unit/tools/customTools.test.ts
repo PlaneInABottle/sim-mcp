@@ -1,7 +1,8 @@
 /**
  * Custom Tools Unit Tests
  *
- * Tests for listCustomTools (lightweight metadata) and getCustomTool (full details).
+ * Tests for listCustomTools (lightweight metadata), getCustomTool (full details),
+ * and upsertCustomTools (batch create/update with filtered response).
  * Verifies the strip/filter pattern and error handling.
  */
 
@@ -9,7 +10,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { listCustomTools, stripCustomToolDetails } from '../../../src/tools/custom-tools/list.js';
 import { getCustomTool } from '../../../src/tools/custom-tools/get.js';
-import type { CustomTool } from '../../../src/schemas/custom-tools.js';
+import {
+  upsertCustomTools,
+  filterUpsertedTools,
+} from '../../../src/tools/custom-tools/upsert.js';
+import type { CustomTool, CustomToolInput } from '../../../src/schemas/custom-tools.js';
 import {
   createMockSimApiClient,
   mockCustomTool,
@@ -302,6 +307,386 @@ describe('Custom Tools', () => {
       // List output should be much smaller than full tool
       expect(listSize).toBeLessThan(getSize);
       expect(listSize / getSize).toBeLessThan(0.3); // At least 70% reduction
+    });
+  });
+
+  // ─── filterUpsertedTools (pure function) ─────────────────────────────
+
+  describe('filterUpsertedTools', () => {
+    // Helper to create a CustomToolInput for testing
+    const makeInput = (overrides: Partial<CustomToolInput> = {}): CustomToolInput => ({
+      title: 'Test Tool',
+      schema: {
+        type: 'function',
+        function: {
+          name: 'test_func',
+          parameters: { type: 'object', properties: {} },
+        },
+      },
+      code: 'return true;',
+      ...overrides,
+    });
+
+    // Helper to create a CustomTool (API response) for testing
+    const makeTool = (overrides: Partial<CustomTool> = {}): CustomTool => ({
+      id: 'ct-new',
+      workspaceId: 'ws-789',
+      userId: 'user-456',
+      title: 'Test Tool',
+      schema: {
+        type: 'function',
+        function: {
+          name: 'test_func',
+          parameters: { type: 'object', properties: {} },
+        },
+      },
+      code: 'return true;',
+      createdAt: '2024-01-15T10:00:00Z',
+      updatedAt: '2024-01-15T10:00:00Z',
+      ...overrides,
+    });
+
+    it('should match updates by ID', () => {
+      const inputTools: CustomToolInput[] = [
+        makeInput({ id: 'ct-1', title: 'Updated Tool' }),
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-1' }),
+        makeTool({ id: 'ct-other', schema: { type: 'function', function: { name: 'other_func', parameters: { type: 'object', properties: {} } } } }),
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('ct-1');
+    });
+
+    it('should match creates by schema.function.name', () => {
+      const inputTools: CustomToolInput[] = [
+        makeInput({ title: 'New Tool' }), // No id → create
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-existing', schema: { type: 'function', function: { name: 'existing_func', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-new-123', schema: { type: 'function', function: { name: 'test_func', parameters: { type: 'object', properties: {} } } } }),
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('ct-new-123');
+      expect(result[0].schema.function.name).toBe('test_func');
+    });
+
+    it('should handle mixed create + update in same batch', () => {
+      const inputTools: CustomToolInput[] = [
+        makeInput({ id: 'ct-1', title: 'Updated Weather' }), // update
+        makeInput({ title: 'Brand New', schema: { type: 'function', function: { name: 'brand_new_func', parameters: { type: 'object', properties: {} } } } }), // create
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-1', schema: { type: 'function', function: { name: 'get_weather', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-2', schema: { type: 'function', function: { name: 'run_query', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-3', schema: { type: 'function', function: { name: 'brand_new_func', parameters: { type: 'object', properties: {} } } } }),
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toHaveLength(2);
+      const ids = result.map((t) => t.id);
+      expect(ids).toContain('ct-1'); // updated
+      expect(ids).toContain('ct-3'); // created
+      expect(ids).not.toContain('ct-2'); // unrelated
+    });
+
+    it('should return empty array for empty input tools', () => {
+      const result = filterUpsertedTools([], [
+        makeTool({ id: 'ct-1' }),
+        makeTool({ id: 'ct-2' }),
+      ]);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when allTools is empty', () => {
+      const result = filterUpsertedTools(
+        [makeInput({ id: 'ct-1' })],
+        []
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return empty array when no matches found', () => {
+      const inputTools: CustomToolInput[] = [
+        makeInput({ id: 'ct-nonexistent' }),
+        makeInput({ schema: { type: 'function', function: { name: 'no_match_func', parameters: { type: 'object', properties: {} } } } }),
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-1', schema: { type: 'function', function: { name: 'get_weather', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-2', schema: { type: 'function', function: { name: 'run_query', parameters: { type: 'object', properties: {} } } } }),
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should not duplicate tools if ID and name both match', () => {
+      // Edge case: a tool being updated also matches by function name
+      const inputTools: CustomToolInput[] = [
+        makeInput({ id: 'ct-1' }), // update by ID
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-1' }), // matches by ID; also has same function name
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('should handle multiple creates with different function names', () => {
+      const inputTools: CustomToolInput[] = [
+        makeInput({ schema: { type: 'function', function: { name: 'func_a', parameters: { type: 'object', properties: {} } } } }),
+        makeInput({ schema: { type: 'function', function: { name: 'func_b', parameters: { type: 'object', properties: {} } } } }),
+      ];
+      const allTools: CustomTool[] = [
+        makeTool({ id: 'ct-x', schema: { type: 'function', function: { name: 'func_a', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-y', schema: { type: 'function', function: { name: 'func_b', parameters: { type: 'object', properties: {} } } } }),
+        makeTool({ id: 'ct-z', schema: { type: 'function', function: { name: 'func_c', parameters: { type: 'object', properties: {} } } } }),
+      ];
+
+      const result = filterUpsertedTools(inputTools, allTools);
+
+      expect(result).toHaveLength(2);
+      const names = result.map((t) => t.schema.function.name);
+      expect(names).toContain('func_a');
+      expect(names).toContain('func_b');
+      expect(names).not.toContain('func_c');
+    });
+  });
+
+  // ─── upsertCustomTools (integration with API client) ─────────────────
+
+  describe('upsertCustomTools', () => {
+    it('should return only upserted tools, not all workspace tools', async () => {
+      // API returns 3 tools (full workspace), but only 1 was upserted
+      const thirdTool: CustomTool = {
+        id: 'ct-3',
+        workspaceId: 'ws-789',
+        userId: 'user-456',
+        title: 'Unrelated Tool',
+        schema: {
+          type: 'function',
+          function: {
+            name: 'unrelated_func',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
+        code: 'return null;',
+        createdAt: '2024-03-01T00:00:00Z',
+        updatedAt: '2024-03-01T00:00:00Z',
+      };
+
+      const mockClient = createMockSimApiClient({
+        upsertCustomTools: async () => [mockCustomTool, mockCustomToolNoDesc, thirdTool],
+      });
+
+      const result = await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-789',
+        tools: [
+          {
+            id: 'ct-1', // update existing tool
+            title: 'Weather Lookup Updated',
+            schema: mockCustomTool.schema,
+            code: mockCustomTool.code,
+          },
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.tools).toHaveLength(1);
+      expect(result.tools[0].id).toBe('ct-1');
+    });
+
+    it('should handle creating new tools (matched by function name)', async () => {
+      const newToolInResponse: CustomTool = {
+        id: 'ct-new-auto-id',
+        workspaceId: 'ws-789',
+        userId: 'user-456',
+        title: 'Email Sender',
+        schema: {
+          type: 'function',
+          function: {
+            name: 'send_email',
+            parameters: {
+              type: 'object',
+              properties: {
+                to: { type: 'string' },
+                subject: { type: 'string' },
+              },
+              required: ['to', 'subject'],
+            },
+          },
+        },
+        code: 'async function sendEmail(to, subject) { ... }',
+        createdAt: '2024-03-15T12:00:00Z',
+        updatedAt: '2024-03-15T12:00:00Z',
+      };
+
+      const mockClient = createMockSimApiClient({
+        upsertCustomTools: async () => [mockCustomTool, mockCustomToolNoDesc, newToolInResponse],
+      });
+
+      const result = await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-789',
+        tools: [
+          {
+            // No id → create
+            title: 'Email Sender',
+            schema: {
+              type: 'function',
+              function: {
+                name: 'send_email',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    to: { type: 'string' },
+                    subject: { type: 'string' },
+                  },
+                  required: ['to', 'subject'],
+                },
+              },
+            },
+            code: 'async function sendEmail(to, subject) { ... }',
+          },
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.tools).toHaveLength(1);
+      expect(result.tools[0].id).toBe('ct-new-auto-id');
+      expect(result.tools[0].schema.function.name).toBe('send_email');
+    });
+
+    it('should handle mixed create and update', async () => {
+      const createdTool: CustomTool = {
+        id: 'ct-brand-new',
+        workspaceId: 'ws-789',
+        userId: 'user-456',
+        title: 'New Tool',
+        schema: {
+          type: 'function',
+          function: {
+            name: 'new_func',
+            parameters: { type: 'object', properties: {} },
+          },
+        },
+        code: 'return 42;',
+        createdAt: '2024-03-15T12:00:00Z',
+        updatedAt: '2024-03-15T12:00:00Z',
+      };
+
+      const mockClient = createMockSimApiClient({
+        upsertCustomTools: async () => [mockCustomTool, mockCustomToolNoDesc, createdTool],
+      });
+
+      const result = await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-789',
+        tools: [
+          { id: 'ct-1', title: 'Updated', schema: mockCustomTool.schema, code: 'updated' }, // update
+          { title: 'New Tool', schema: createdTool.schema, code: 'return 42;' }, // create
+        ],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.tools).toHaveLength(2);
+      const ids = result.tools.map((t) => t.id);
+      expect(ids).toContain('ct-1');
+      expect(ids).toContain('ct-brand-new');
+      expect(ids).not.toContain('ct-2'); // unrelated tool filtered out
+    });
+
+    it('should handle empty tools array', async () => {
+      const mockClient = createMockSimApiClient({
+        upsertCustomTools: async () => [mockCustomTool, mockCustomToolNoDesc],
+      });
+
+      const result = await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-789',
+        tools: [],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.tools).toEqual([]);
+    });
+
+    it('should pass correct arguments to API client', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const inputTools: CustomToolInput[] = [
+        {
+          id: 'ct-1',
+          title: 'Updated Weather',
+          schema: mockCustomTool.schema,
+          code: 'updated code',
+        },
+      ];
+
+      await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-test-123',
+        tools: inputTools,
+      });
+
+      expect(mockClient.upsertCustomTools).toHaveBeenCalledWith({
+        workspaceId: 'ws-test-123',
+        tools: inputTools,
+      });
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        upsertCustomTools: async () => {
+          throw new Error('Forbidden: insufficient permissions');
+        },
+      });
+
+      await expect(
+        upsertCustomTools(mockClient, {
+          workspaceId: 'ws-789',
+          tools: [
+            {
+              title: 'Test',
+              schema: {
+                type: 'function',
+                function: {
+                  name: 'test',
+                  parameters: { type: 'object', properties: {} },
+                },
+              },
+              code: 'return;',
+            },
+          ],
+        })
+      ).rejects.toThrow('Forbidden: insufficient permissions');
+    });
+
+    it('should return full CustomTool objects (not stripped)', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await upsertCustomTools(mockClient, {
+        workspaceId: 'ws-789',
+        tools: [
+          { id: 'ct-1', title: 'Updated', schema: mockCustomTool.schema, code: 'code' },
+        ],
+      });
+
+      // Verify full tool data is preserved
+      const tool = result.tools[0];
+      expect(tool.schema).toBeDefined();
+      expect(tool.code).toBeDefined();
+      expect(tool.workspaceId).toBeDefined();
+      expect(tool.createdAt).toBeDefined();
+      expect(tool.updatedAt).toBeDefined();
     });
   });
 });
