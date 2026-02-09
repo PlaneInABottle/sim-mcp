@@ -14,6 +14,8 @@ import type {
   OperationResponse,
   WorkflowExportPayload,
 } from '../../src/client/types.js';
+import type { CustomTool } from '../../src/schemas/custom-tools.js';
+import type { Skill } from '../../src/schemas/skills.js';
 import type { Block, Edge, Workflow, WorkflowWithBlocks } from '../../src/schemas/workflow.js';
 
 /**
@@ -28,6 +30,34 @@ export const mockWorkflow: Workflow = {
   isDeployed: false,
   createdAt: '2024-01-15T10:00:00Z',
   updatedAt: '2024-01-15T10:00:00Z',
+};
+
+/**
+ * Sample skill data for testing
+ */
+export const mockSkill: Skill = {
+  id: 'skill-1',
+  workspaceId: 'ws-789',
+  userId: 'user-456',
+  name: 'my-skill',
+  description: 'A test skill',
+  content: 'Test content for the skill',
+  createdAt: new Date('2024-01-15'),
+  updatedAt: new Date('2024-01-15'),
+};
+
+/**
+ * Sample skill with long content to demonstrate stripping value
+ */
+export const mockSkillWithLongContent: Skill = {
+  id: 'skill-2',
+  workspaceId: 'ws-789',
+  userId: 'user-456',
+  name: 'detailed-skill',
+  description: 'A skill with extensive content',
+  content: 'A'.repeat(50000), // 50KB content to demonstrate stripping value
+  createdAt: new Date('2024-01-16'),
+  updatedAt: new Date('2024-01-17'),
 };
 
 /**
@@ -199,6 +229,65 @@ export const mockImportResponse: ImportWorkflowResponse = {
 };
 
 /**
+ * Sample custom tool data for testing
+ */
+export const mockCustomTool: CustomTool = {
+  id: 'ct-1',
+  workspaceId: 'ws-789',
+  userId: 'user-456',
+  title: 'Weather Lookup',
+  schema: {
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Get weather for a city',
+      parameters: {
+        type: 'object',
+        properties: {
+          city: { type: 'string', description: 'City name' },
+          units: { type: 'string', enum: ['celsius', 'fahrenheit'] },
+        },
+        required: ['city'],
+      },
+    },
+  },
+  code: 'async function getWeather(city, units) {\n  const response = await fetch(`https://api.weather.com/${city}`);\n  return response.json();\n}',
+  createdAt: '2024-01-15T10:00:00Z',
+  updatedAt: '2024-01-15T10:00:00Z',
+};
+
+/**
+ * Second sample custom tool (without description to test optional field)
+ */
+export const mockCustomToolNoDesc: CustomTool = {
+  id: 'ct-2',
+  workspaceId: 'ws-789',
+  userId: 'user-456',
+  title: 'Database Query',
+  schema: {
+    type: 'function',
+    function: {
+      name: 'run_query',
+      parameters: {
+        type: 'object',
+        properties: {
+          sql: { type: 'string', description: 'SQL query to run' },
+        },
+        required: ['sql'],
+      },
+    },
+  },
+  code: 'async function runQuery(sql) {\n  const db = await getConnection();\n  return db.query(sql);\n}',
+  createdAt: '2024-02-10T08:30:00Z',
+  updatedAt: '2024-02-10T08:30:00Z',
+};
+
+/**
+ * Array of mock custom tools for list operations
+ */
+export const mockCustomTools: CustomTool[] = [mockCustomTool, mockCustomToolNoDesc];
+
+/**
  * Create a mock SimApiClient with all methods including new operation-based ones
  */
 export function createMockSimApiClient(
@@ -225,6 +314,9 @@ export function createMockSimApiClient(
     subflowOperation: [],
     exportWorkflow: [],
     importWorkflow: [],
+    listCustomTools: [],
+    upsertCustomTools: [],
+    listSkills: [],
   };
 
   const defaultMethods: MockSimApiClientMethods = {
@@ -313,6 +405,18 @@ export function createMockSimApiClient(
       callHistory.importWorkflow.push(request);
       return mockImportResponse;
     },
+    listCustomTools: async (params) => {
+      callHistory.listCustomTools.push(params);
+      return [...mockCustomTools];
+    },
+    upsertCustomTools: async (params) => {
+      callHistory.upsertCustomTools.push(params);
+      return [...mockCustomTools];
+    },
+    listSkills: async (params) => {
+      callHistory.listSkills.push(params);
+      return [mockSkill, mockSkillWithLongContent];
+    },
   };
 
   const methods = { ...defaultMethods, ...overrides };
@@ -353,6 +457,13 @@ export function createMockSimApiClient(
     // Import/Export methods
     exportWorkflow: vi.fn(methods.exportWorkflow),
     importWorkflow: vi.fn(methods.importWorkflow),
+
+    // Custom tools methods
+    listCustomTools: vi.fn(methods.listCustomTools),
+    upsertCustomTools: vi.fn(methods.upsertCustomTools),
+
+    // Skills methods
+    listSkills: vi.fn(methods.listSkills),
 
     // Call history for assertions
     _mockCalls: callHistory,
@@ -431,6 +542,12 @@ export interface MockSimApiClientMethods {
   ) => Promise<OperationResponse>;
   exportWorkflow: (workflowId: string) => Promise<WorkflowExportPayload>;
   importWorkflow: (request: Record<string, unknown>) => Promise<ImportWorkflowResponse>;
+  listCustomTools: (params?: {
+    workspaceId?: string;
+    workflowId?: string;
+  }) => Promise<CustomTool[]>;
+  upsertCustomTools: (params: Record<string, unknown>) => Promise<CustomTool[]>;
+  listSkills: (params: { workspaceId: string }) => Promise<Skill[]>;
 }
 
 /**
@@ -480,4 +597,7 @@ export interface MockCallHistory {
   }>;
   exportWorkflow: string[];
   importWorkflow: Array<Record<string, unknown>>;
+  listCustomTools: Array<{ workspaceId?: string; workflowId?: string } | undefined>;
+  upsertCustomTools: Array<Record<string, unknown>>;
+  listSkills: Array<{ workspaceId: string }>;
 }

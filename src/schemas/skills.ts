@@ -39,3 +39,6 @@ export const SkillInputSchema = z.object({
  */
 export type Skill = z.infer<typeof SkillSchema>;
 export type SkillInput = z.infer<typeof SkillInputSchema>;
+
+/** Lightweight skill metadata (excludes content for list responses) */
+export type SkillMetadata = Pick<Skill, 'id' | 'name' | 'description'>;

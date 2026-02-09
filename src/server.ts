@@ -42,11 +42,15 @@ import {
   GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_TOOL_NAME,
   // Custom tools
+  GET_CUSTOM_TOOL_DESCRIPTION,
+  GET_CUSTOM_TOOL_TOOL_NAME,
   LIST_CUSTOM_TOOLS_DESCRIPTION,
   LIST_CUSTOM_TOOLS_TOOL_NAME,
   // Skills tools
   LIST_SKILLS_DESCRIPTION,
   LIST_SKILLS_TOOL_NAME,
+  GET_SKILL_DESCRIPTION,
+  GET_SKILL_TOOL_NAME,
   CREATE_SKILL_DESCRIPTION,
   CREATE_SKILL_TOOL_NAME,
   UPDATE_SKILL_DESCRIPTION,
@@ -88,6 +92,8 @@ import {
   executeWorkflowInputSchema,
   getBlock,
   getBlockInputSchema,
+  getCustomTool,
+  getCustomToolInputSchema,
   getExecutionLogs,
   getExecutionLogsInputSchema,
   getExecutionLogDetail,
@@ -120,6 +126,8 @@ import {
   upsertCustomToolsInputSchema,
   listSkills,
   listSkillsInputSchema,
+  getSkill,
+  getSkillInputSchema,
   createSkill,
   createSkillInputSchema,
   updateSkill,
@@ -297,6 +305,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       inputSchema: listCustomToolsInputSchema,
     },
     {
+      name: GET_CUSTOM_TOOL_TOOL_NAME,
+      description: GET_CUSTOM_TOOL_DESCRIPTION,
+      inputSchema: getCustomToolInputSchema,
+    },
+    {
       name: UPSERT_CUSTOM_TOOLS_TOOL_NAME,
       description: UPSERT_CUSTOM_TOOLS_DESCRIPTION,
       inputSchema: upsertCustomToolsInputSchema,
@@ -306,6 +319,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: LIST_SKILLS_TOOL_NAME,
       description: LIST_SKILLS_DESCRIPTION,
       inputSchema: listSkillsInputSchema,
+    },
+    {
+      name: GET_SKILL_TOOL_NAME,
+      description: GET_SKILL_DESCRIPTION,
+      inputSchema: getSkillInputSchema,
     },
     {
       name: CREATE_SKILL_TOOL_NAME,
@@ -539,6 +557,12 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
           return createResponse(result);
         }
 
+        case GET_CUSTOM_TOOL_TOOL_NAME: {
+          const input = args as { workspaceId?: string; workflowId?: string; toolId: string };
+          const result = await getCustomTool(apiClient, input);
+          return createResponse(result);
+        }
+
         case UPSERT_CUSTOM_TOOLS_TOOL_NAME: {
           const input = args as {
             workspaceId: string;
@@ -568,6 +592,12 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case LIST_SKILLS_TOOL_NAME: {
           const input = args as { workspaceId: string };
           const result = await listSkills(apiClient, input);
+          return createResponse(result);
+        }
+
+        case GET_SKILL_TOOL_NAME: {
+          const input = args as { workspaceId: string; id: string };
+          const result = await getSkill(apiClient, input);
           return createResponse(result);
         }
 

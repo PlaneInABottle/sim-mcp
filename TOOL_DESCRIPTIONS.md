@@ -158,6 +158,55 @@ or for applying major structural changes.
 
 ## Guidelines for Future Tool Descriptions
 
+### Skills Tools
+
+#### list_skills
+```
+List all skills in a workspace. Returns lightweight skill metadata (id, name, description)
+without content. Use get_skill to retrieve full skill details including content. Requires
+workspaceId parameter.
+```
+
+#### get_skill
+```
+Get full details of a specific skill by ID, including its content. Use list_skills first to
+discover skill IDs and metadata, then use this tool to retrieve the full content of a specific
+skill.
+```
+
+#### create_skill
+```
+Create a new skill in a workspace. Skills are reusable knowledge or instructions that can be
+attached to agent blocks. Name must be kebab-case (e.g. "my-skill"). Returns the created skill.
+```
+
+#### update_skill
+```
+Update an existing skill in a workspace. Provide the skill ID and all fields (name, description,
+content). Name must be kebab-case. Returns the updated skill.
+```
+
+#### delete_skill
+```
+Delete a skill from a workspace by its ID. This permanently removes the skill. Requires both
+the skill ID and workspace ID.
+```
+
+### Custom Tools
+
+#### list_custom_tools
+```
+List all custom tools in a workspace. Returns tools with their id, title, schema, and code.
+Requires workspaceId or workflowId parameter.
+```
+
+#### upsert_custom_tools
+```
+Create or update custom tools in a workspace. Supports batch operations. If a tool has an id,
+it will be updated; otherwise, a new tool will be created. Each tool requires title, schema
+(with function definition), and code.
+```
+
 ### Do's ✅
 - **Be explicit about prerequisites** - What must exist first?
 - **Mention side effects** - What else gets affected?

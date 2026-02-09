@@ -10,8 +10,18 @@ export {
   LIST_SKILLS_TOOL_NAME,
   listSkills,
   listSkillsInputSchema,
+  stripSkillDetails,
 } from './list.js';
 export type { ListSkillsInput, ListSkillsOutput } from './list.js';
+
+// Get skill tool
+export {
+  GET_SKILL_DESCRIPTION,
+  GET_SKILL_TOOL_NAME,
+  getSkill,
+  getSkillInputSchema,
+} from './get.js';
+export type { GetSkillInput, GetSkillOutput } from './get.js';
 
 // Create skill tool
 export {

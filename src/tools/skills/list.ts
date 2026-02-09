@@ -5,8 +5,20 @@
  */
 
 import type { SimApiClient } from '../../client/index.js';
-import type { Skill } from '../../schemas/skills.js';
+import type { Skill, SkillMetadata } from '../../schemas/skills.js';
 import { getLogger } from '../../utils/logger.js';
+
+/**
+ * Strip full skill to lightweight metadata.
+ * Removes content, timestamps, and internal IDs to reduce response size.
+ */
+export function stripSkillDetails(skill: Skill): SkillMetadata {
+  return {
+    id: skill.id,
+    name: skill.name,
+    description: skill.description,
+  };
+}
 
 /**
  * Tool name constant
@@ -17,7 +29,7 @@ export const LIST_SKILLS_TOOL_NAME = 'list_skills';
  * Tool description for MCP registration
  */
 export const LIST_SKILLS_DESCRIPTION =
-  'List all skills in a workspace. Returns skills with their id, name, description, and content. Requires workspaceId parameter.';
+  'List all skills in a workspace. Returns lightweight skill metadata (id, name, description) without content. Use get_skill to retrieve full skill details including content. Requires workspaceId parameter.';
 
 /**
  * JSON Schema for list skills input (for MCP registration)
@@ -37,7 +49,7 @@ export const listSkillsInputSchema = {
  * Output type for list skills
  */
 export interface ListSkillsOutput {
-  skills: Skill[];
+  skills: SkillMetadata[];
 }
 
 /**
@@ -73,7 +85,7 @@ export async function listSkills(
       count: skills.length,
     });
 
-    return { skills };
+    return { skills: skills.map(stripSkillDetails) };
   } catch (error) {
     logger.error('Failed to list skills', {
       operation: 'list_skills',
