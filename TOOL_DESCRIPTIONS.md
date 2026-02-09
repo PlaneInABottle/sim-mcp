@@ -179,7 +179,8 @@ then use this tool for detailed inspection.
 ```
 Create or update custom tools in a workspace. Supports batch operations. If a tool has an id, it
 will be updated; otherwise, a new tool will be created. Each tool requires title, schema (with
-function definition), and code.
+function definition), and code. Returns only the created/updated tools, not all tools in the
+workspace.
 ```
 
 ## Guidelines for Future Tool Descriptions
@@ -230,7 +231,8 @@ Requires workspaceId or workflowId parameter.
 ```
 Create or update custom tools in a workspace. Supports batch operations. If a tool has an id,
 it will be updated; otherwise, a new tool will be created. Each tool requires title, schema
-(with function definition), and code.
+(with function definition), and code. Returns only the created/updated tools, not all tools in
+the workspace.
 ```
 
 ### Do's ✅
