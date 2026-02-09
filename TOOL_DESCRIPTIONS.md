@@ -156,6 +156,32 @@ workflow content. Use with caution - typically used when you already have a full
 or for applying major structural changes.
 ```
 
+### Custom Tools
+
+> **Pattern**: `list_custom_tools` → `get_custom_tool` follows the same lightweight-list + detailed-get
+> pattern as `list_workflows` → `get_workflow` → `get_block`.
+
+#### list_custom_tools
+```
+List all custom tools in a workspace. Returns lightweight metadata only (id, title, name, description)
+without full schema or code. Use get_custom_tool to retrieve full details for a specific tool.
+Requires workspaceId or workflowId parameter.
+```
+
+#### get_custom_tool
+```
+Get full details for a specific custom tool by ID. Returns the complete tool including schema
+(function definition with parameters) and code. Use list_custom_tools first to find tool IDs,
+then use this tool for detailed inspection.
+```
+
+#### upsert_custom_tools
+```
+Create or update custom tools in a workspace. Supports batch operations. If a tool has an id, it
+will be updated; otherwise, a new tool will be created. Each tool requires title, schema (with
+function definition), and code.
+```
+
 ## Guidelines for Future Tool Descriptions
 
 ### Skills Tools
