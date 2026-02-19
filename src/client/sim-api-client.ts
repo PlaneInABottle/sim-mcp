@@ -14,7 +14,7 @@ import axios, {
 
 import type { CustomTool, CustomToolInput } from '../schemas/custom-tools.js';
 import type { Skill, SkillInput } from '../schemas/skills.js';
-import type { Block, Edge, Workflow, WorkflowWithBlocks } from '../schemas/workflow.js';
+import type { Workflow, WorkflowWithBlocks } from '../schemas/workflow.js';
 import { getLogger, logApiError, logRequest } from '../utils/logger.js';
 import { AuthManager } from './auth.js';
 import {
@@ -411,96 +411,6 @@ export class SimApiClient {
   ): Promise<Workflow> {
     // put() auto-unwraps { data: ... } response
     return await this.put<Workflow>(`/api/workflows/${workflowId}`, data);
-  }
-
-  // ==========================================
-  // Block API Methods
-  // ==========================================
-
-  /**
-   * Add a block to a workflow
-   *
-   * @param workflowId - The workflow ID
-   * @param block - Block data to add
-   * @returns Newly created block
-   */
-  async addBlock(
-    workflowId: string,
-    block: {
-      type: string;
-      name: string;
-      positionX: number;
-      positionY: number;
-      config?: Record<string, unknown>;
-      enabled?: boolean;
-    }
-  ): Promise<Block> {
-    return this.post<Block>(`/api/v1/admin/workflows/${workflowId}/blocks`, block);
-  }
-
-  /**
-   * Update a block in a workflow
-   *
-   * @param workflowId - The workflow ID
-   * @param blockId - The block ID
-   * @param data - Update data
-   * @returns Updated block
-   */
-  async updateBlock(
-    workflowId: string,
-    blockId: string,
-    data: {
-      name?: string;
-      positionX?: number;
-      positionY?: number;
-      config?: Record<string, unknown>;
-      enabled?: boolean;
-    }
-  ): Promise<Block> {
-    return this.patch<Block>(`/api/v1/admin/workflows/${workflowId}/blocks/${blockId}`, data);
-  }
-
-  /**
-   * Remove a block from a workflow
-   *
-   * @param workflowId - The workflow ID
-   * @param blockId - The block ID
-   */
-  async removeBlock(workflowId: string, blockId: string): Promise<void> {
-    await this.delete<void>(`/api/v1/admin/workflows/${workflowId}/blocks/${blockId}`);
-  }
-
-  // ==========================================
-  // Edge API Methods
-  // ==========================================
-
-  /**
-   * Add an edge to connect two blocks in a workflow
-   *
-   * @param workflowId - The workflow ID
-   * @param edge - Edge data to add
-   * @returns Newly created edge
-   */
-  async addEdge(
-    workflowId: string,
-    edge: {
-      sourceBlockId: string;
-      targetBlockId: string;
-      sourceHandle: string;
-      targetHandle: string;
-    }
-  ): Promise<Edge> {
-    return this.post<Edge>(`/api/v1/admin/workflows/${workflowId}/edges`, edge);
-  }
-
-  /**
-   * Remove an edge from a workflow
-   *
-   * @param workflowId - The workflow ID
-   * @param edgeId - The edge ID
-   */
-  async removeEdge(workflowId: string, edgeId: string): Promise<void> {
-    await this.delete<void>(`/api/v1/admin/workflows/${workflowId}/edges/${edgeId}`);
   }
 
   // ==========================================
