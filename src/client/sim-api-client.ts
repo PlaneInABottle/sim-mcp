@@ -455,7 +455,6 @@ export class SimApiClient {
    *
    * @param workflowId - The workflow ID
    * @param blocks - Array of blocks to add
-   * @param edges - Optional edges to create with the blocks
    * @param options - Optional loops, parallels, and subBlockValues
    * @returns Operation response
    */
