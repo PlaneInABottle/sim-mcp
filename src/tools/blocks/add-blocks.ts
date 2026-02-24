@@ -20,7 +20,7 @@ export const ADD_BLOCKS_TOOL_NAME = 'add_blocks';
  * Tool description for MCP registration
  */
 export const ADD_BLOCKS_DESCRIPTION =
-  'Add one or more blocks to a workflow. Blocks represent different actions (agent, api, condition, etc.). Loop and parallel blocks can be added with type "loop" or "parallel". Block and edge IDs are auto-generated if not provided. Can optionally include edges to connect the new blocks.';
+  'Add one or more blocks to a workflow. Blocks represent different actions (agent, api, condition, etc.). Loop and parallel blocks can be added with type "loop" or "parallel". Block IDs are auto-generated if not provided. Use add_edge tool to connect blocks.';
 
 /**
  * JSON Schema for MCP registration
@@ -52,13 +52,6 @@ export interface AddBlocksInput {
     outputs?: Record<string, unknown>;
     enabled?: boolean;
   }>;
-  edges?: Array<{
-    source: string;
-    target: string;
-    sourceHandle?: string | null;
-    targetHandle?: string | null;
-    type?: string;
-  }>;
   loops?: Record<string, unknown>;
   parallels?: Record<string, unknown>;
   subBlockValues?: Record<string, Record<string, unknown>>;
@@ -89,7 +82,6 @@ export async function addBlocks(
       operation: 'add_blocks',
       workflowId: input.workflowId,
       blockCount: input.blocks.length,
-      edgeCount: input.edges?.length ?? 0,
     });
 
     // Ensure all blocks have IDs
@@ -98,17 +90,11 @@ export async function addBlocks(
       id: block.id ?? generateBlockId(),
     }));
 
-    // Ensure all edges have IDs
-    const edgesWithIds = input.edges?.map((edge) => ({
-      ...edge,
-      id: `edge-${crypto.randomUUID()}`,
-    }));
-
     // Call API client
     const result: OperationResponse = await client.addBlocks(
       input.workflowId,
       blocksWithIds,
-      edgesWithIds,
+      undefined,
       {
         loops: input.loops,
         parallels: input.parallels,

@@ -142,7 +142,6 @@ export {
   updateSubflowJsonSchema,
   // Common schemas
   PositionSchema as OpPositionSchema,
-  AutoConnectEdgeSchema,
   BlockDataForAddSchema,
   OperationResponseSchema,
 } from './operations.js';
@@ -161,7 +160,6 @@ export type {
   AddSubflowInput,
   UpdateSubflowInput,
   Position as OpPosition,
-  AutoConnectEdge,
   BlockDataForAdd,
   OperationResponseType,
 } from './operations.js';

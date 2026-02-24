@@ -110,29 +110,6 @@ describe('Block Operation Tools', () => {
       expect(result.blocksAdded).toBe(3);
     });
 
-    it('should add blocks with edges', async () => {
-      const mockClient = createMockSimApiClient();
-
-      await addBlocks(mockClient, {
-        workflowId: 'wf-123',
-        blocks: [
-          { id: 'block-1', type: 'agent', name: 'Agent', position: { x: 100, y: 100 } },
-          { id: 'block-2', type: 'http', name: 'HTTP', position: { x: 300, y: 100 } },
-        ],
-        edges: [{ source: 'block-1', target: 'block-2' }],
-      });
-
-      expect(mockClient.addBlocks).toHaveBeenCalledWith(
-        'wf-123',
-        expect.arrayContaining([
-          expect.objectContaining({ id: 'block-1', type: 'agent' }),
-          expect.objectContaining({ id: 'block-2', type: 'http' }),
-        ]),
-        [expect.objectContaining({ id: expect.stringContaining('edge-'), source: 'block-1', target: 'block-2' })],
-        expect.any(Object)
-      );
-    });
-
     it('should auto-generate block IDs if not provided', async () => {
       const mockClient = createMockSimApiClient();
 

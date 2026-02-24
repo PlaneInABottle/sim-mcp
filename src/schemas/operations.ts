@@ -20,18 +20,6 @@ export const PositionSchema = z.object({
 });
 export type Position = z.infer<typeof PositionSchema>;
 
-/**
- * Edge schema for auto-connect functionality
- */
-export const AutoConnectEdgeSchema = z.object({
-  source: z.string(),
-  target: z.string(),
-  sourceHandle: z.string().nullable().optional(),
-  targetHandle: z.string().nullable().optional(),
-  type: z.string().optional(),
-});
-export type AutoConnectEdge = z.infer<typeof AutoConnectEdgeSchema>;
-
 // ==========================================
 // Export/Import Schemas
 // ==========================================
@@ -83,7 +71,6 @@ export type BlockDataForAdd = z.infer<typeof BlockDataForAddSchema>;
 export const AddBlocksInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   blocks: z.array(BlockDataForAddSchema).min(1, 'At least one block is required'),
-  edges: z.array(AutoConnectEdgeSchema).optional(),
   loops: z.record(z.unknown()).optional(),
   parallels: z.record(z.unknown()).optional(),
   subBlockValues: z.record(z.record(z.unknown())).optional(),
@@ -137,21 +124,6 @@ export const addBlocksJsonSchema = {
           },
         },
         required: ['type', 'name', 'position'],
-      },
-    },
-    edges: {
-      type: 'array',
-      description: 'Optional edges to create with the blocks',
-      items: {
-        type: 'object',
-        properties: {
-          source: { type: 'string', description: 'ID of the source block' },
-          target: { type: 'string', description: 'ID of the target block' },
-          sourceHandle: { type: 'string', description: 'Optional handle name on the source block' },
-          targetHandle: { type: 'string', description: 'Optional handle name on the target block' },
-          type: { type: 'string', description: 'Optional edge type' },
-        },
-        required: ['source', 'target'],
       },
     },
   },
