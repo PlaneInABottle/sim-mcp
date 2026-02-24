@@ -24,7 +24,6 @@ export type Position = z.infer<typeof PositionSchema>;
  * Edge schema for auto-connect functionality
  */
 export const AutoConnectEdgeSchema = z.object({
-  id: z.string(),
   source: z.string(),
   target: z.string(),
   sourceHandle: z.string().nullable().optional(),
@@ -146,13 +145,13 @@ export const addBlocksJsonSchema = {
       items: {
         type: 'object',
         properties: {
-          id: { type: 'string' },
-          source: { type: 'string' },
-          target: { type: 'string' },
-          sourceHandle: { type: 'string' },
-          targetHandle: { type: 'string' },
+          source: { type: 'string', description: 'ID of the source block' },
+          target: { type: 'string', description: 'ID of the target block' },
+          sourceHandle: { type: 'string', description: 'Optional handle name on the source block' },
+          targetHandle: { type: 'string', description: 'Optional handle name on the target block' },
+          type: { type: 'string', description: 'Optional edge type' },
         },
-        required: ['id', 'source', 'target'],
+        required: ['source', 'target'],
       },
     },
   },

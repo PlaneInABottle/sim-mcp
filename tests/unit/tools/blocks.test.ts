@@ -119,7 +119,7 @@ describe('Block Operation Tools', () => {
           { id: 'block-1', type: 'agent', name: 'Agent', position: { x: 100, y: 100 } },
           { id: 'block-2', type: 'http', name: 'HTTP', position: { x: 300, y: 100 } },
         ],
-        edges: [{ id: 'e-1', source: 'block-1', target: 'block-2' }],
+        edges: [{ source: 'block-1', target: 'block-2' }],
       });
 
       expect(mockClient.addBlocks).toHaveBeenCalledWith(
@@ -128,7 +128,7 @@ describe('Block Operation Tools', () => {
           expect.objectContaining({ id: 'block-1', type: 'agent' }),
           expect.objectContaining({ id: 'block-2', type: 'http' }),
         ]),
-        [{ id: 'e-1', source: 'block-1', target: 'block-2' }],
+        [expect.objectContaining({ id: expect.stringContaining('edge-'), source: 'block-1', target: 'block-2' })],
         expect.any(Object)
       );
     });

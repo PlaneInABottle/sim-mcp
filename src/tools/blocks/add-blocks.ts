@@ -53,7 +53,6 @@ export interface AddBlocksInput {
     enabled?: boolean;
   }>;
   edges?: Array<{
-    id: string;
     source: string;
     target: string;
     sourceHandle?: string | null;
@@ -99,11 +98,17 @@ export async function addBlocks(
       id: block.id ?? generateBlockId(),
     }));
 
+    // Ensure all edges have IDs
+    const edgesWithIds = input.edges?.map((edge) => ({
+      ...edge,
+      id: `edge-${crypto.randomUUID()}`,
+    }));
+
     // Call API client
     const result: OperationResponse = await client.addBlocks(
       input.workflowId,
       blocksWithIds,
-      input.edges,
+      edgesWithIds,
       {
         loops: input.loops,
         parallels: input.parallels,
