@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { Skill, SkillMetadata } from '../../schemas/skills.js';
 import { getLogger } from '../../utils/logger.js';
+import { requireParam } from '../../utils/validation.js';
 
 /**
  * Strip full skill to lightweight metadata.
@@ -70,6 +71,8 @@ export async function listSkills(
   client: SimApiClient,
   input: ListSkillsInput
 ): Promise<ListSkillsOutput> {
+  requireParam(input.workspaceId, 'workspaceId', 'list_skills');
+
   const logger = getLogger();
 
   try {

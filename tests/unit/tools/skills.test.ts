@@ -1,16 +1,20 @@
 /**
  * Skills Tools Unit Tests
  *
- * Tests for list_skills (lightweight metadata) and get_skill (full details).
- * Verifies the stripSkillDetails function and payload reduction.
+ * Tests for all skills tools including input validation,
+ * lightweight metadata stripping, and payload reduction.
  */
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { ValidationError } from '../../../src/client/errors.js';
 import {
+  createSkill,
+  deleteSkill,
   getSkill,
   listSkills,
   stripSkillDetails,
+  updateSkill,
 } from '../../../src/tools/skills/index.js';
 import {
   createMockSimApiClient,
@@ -247,6 +251,121 @@ describe('Skills Tools', () => {
       // The full content should be preserved
       const getPayload = JSON.stringify(result.skill);
       expect(getPayload.length).toBeGreaterThan(50000);
+    });
+  });
+
+  describe('input validation', () => {
+    const mockClient = createMockSimApiClient();
+
+    describe('listSkills', () => {
+      it('should throw ValidationError when workspaceId is missing', async () => {
+        await expect(
+          listSkills(mockClient, { workspaceId: '' })
+        ).rejects.toThrow(ValidationError);
+        await expect(
+          listSkills(mockClient, { workspaceId: '' })
+        ).rejects.toThrow("Missing required parameter 'workspaceId' for list_skills");
+      });
+
+      it('should not call API when validation fails', async () => {
+        const client = createMockSimApiClient();
+        try {
+          await listSkills(client, { workspaceId: '' });
+        } catch {
+          // expected
+        }
+        expect(client.listSkills).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('getSkill', () => {
+      it('should throw ValidationError when workspaceId is missing', async () => {
+        await expect(
+          getSkill(mockClient, { workspaceId: '', id: 'skill-1' })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError when id is missing', async () => {
+        await expect(
+          getSkill(mockClient, { workspaceId: 'ws-789', id: '' })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError listing both params when both missing', async () => {
+        await expect(
+          getSkill(mockClient, { workspaceId: '', id: '' })
+        ).rejects.toThrow("Missing required parameters 'workspaceId', 'id' for get_skill");
+      });
+    });
+
+    describe('createSkill', () => {
+      it('should throw ValidationError when workspaceId is missing', async () => {
+        await expect(
+          createSkill(mockClient, {
+            workspaceId: '',
+            name: 'my-skill',
+            description: 'desc',
+            content: 'body',
+          })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError when multiple params are missing', async () => {
+        await expect(
+          createSkill(mockClient, {
+            workspaceId: '',
+            name: '',
+            description: 'desc',
+            content: '',
+          })
+        ).rejects.toThrow("Missing required parameters 'workspaceId', 'name', 'content' for create_skill");
+      });
+    });
+
+    describe('updateSkill', () => {
+      it('should throw ValidationError when id is missing', async () => {
+        await expect(
+          updateSkill(mockClient, {
+            workspaceId: 'ws-789',
+            id: '',
+            name: 'my-skill',
+            description: 'desc',
+            content: 'body',
+          })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError when multiple params are missing', async () => {
+        await expect(
+          updateSkill(mockClient, {
+            workspaceId: '',
+            id: '',
+            name: 'my-skill',
+            description: 'desc',
+            content: 'body',
+          })
+        ).rejects.toThrow("Missing required parameters 'workspaceId', 'id' for update_skill");
+      });
+    });
+
+    describe('deleteSkill', () => {
+      it('should throw ValidationError when workspaceId is missing', async () => {
+        await expect(
+          deleteSkill(mockClient, { workspaceId: '', id: 'skill-1' })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError when id is missing', async () => {
+        await expect(
+          deleteSkill(mockClient, { workspaceId: 'ws-789', id: '' })
+        ).rejects.toThrow(ValidationError);
+      });
+
+      it('should throw ValidationError listing both params when both missing', async () => {
+        await expect(
+          deleteSkill(mockClient, { workspaceId: '', id: '' })
+        ).rejects.toThrow("Missing required parameters 'workspaceId', 'id' for delete_skill");
+      });
     });
   });
 });

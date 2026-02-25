@@ -7,6 +7,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { Skill } from '../../schemas/skills.js';
 import { getLogger } from '../../utils/logger.js';
+import { requireParams } from '../../utils/validation.js';
 
 /**
  * Tool name constant
@@ -75,6 +76,16 @@ export async function createSkill(
   client: SimApiClient,
   input: CreateSkillInput
 ): Promise<CreateSkillOutput> {
+  requireParams(
+    {
+      workspaceId: input.workspaceId,
+      name: input.name,
+      description: input.description,
+      content: input.content,
+    },
+    'create_skill'
+  );
+
   const logger = getLogger();
 
   try {

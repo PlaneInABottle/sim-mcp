@@ -6,6 +6,7 @@
 
 import type { SimApiClient } from '../../client/index.js';
 import { getLogger } from '../../utils/logger.js';
+import { requireParams } from '../../utils/validation.js';
 
 /**
  * Tool name constant
@@ -62,6 +63,11 @@ export async function deleteSkill(
   client: SimApiClient,
   input: DeleteSkillInput
 ): Promise<DeleteSkillOutput> {
+  requireParams(
+    { workspaceId: input.workspaceId, id: input.id },
+    'delete_skill'
+  );
+
   const logger = getLogger();
 
   try {
