@@ -8,11 +8,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Block } from '../../../src/schemas/workflow.js';
 import {
+  deleteWorkflow,
+  deployWorkflow,
+  getDeployedWorkflowState,
   getWorkflow,
+  getWorkflowStatus,
   listWorkflows,
   replaceWorkflowState,
+  undeployWorkflow,
 } from '../../../src/tools/workflow/index.js';
-import { createMockSimApiClient, mockDeployedWorkflow, mockWorkflow } from '../../mocks/sim-api.js';
+import {
+  createMockSimApiClient,
+  mockDeployedWorkflow,
+  mockWorkflow,
+  mockWorkflowDeleteCheckResult,
+} from '../../mocks/sim-api.js';
 
 // Mock the logger to avoid output during tests
 vi.mock('../../../src/utils/logger.js', () => ({
@@ -173,6 +183,99 @@ describe('Workflow Tools', () => {
           state: { blocks: {}, edges: [], loops: {}, parallels: {} },
         })
       ).rejects.toThrow('Replace failed');
+    });
+  });
+
+  describe('getWorkflowStatus', () => {
+    it('should return workflow status', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getWorkflowStatus(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.isDeployed).toBe(true);
+      expect(result.needsRedeployment).toBe(false);
+      expect(mockClient.getWorkflowStatus).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('getDeployedWorkflowState', () => {
+    it('should return deployed state', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getDeployedWorkflowState(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.deployedState).toBeDefined();
+      expect(mockClient.getDeployedWorkflowState).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('deployWorkflow', () => {
+    it('should return concise deployment details', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await deployWorkflow(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.isDeployed).toBe(true);
+      expect(result.apiKey).toBe('Workspace API keys');
+      expect(mockClient.deployWorkflow).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('undeployWorkflow', () => {
+    it('should return concise undeploy details', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await undeployWorkflow(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.isDeployed).toBe(false);
+      expect(result.apiKey).toBeNull();
+      expect(mockClient.undeployWorkflow).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('deleteWorkflow', () => {
+    it('should return template summary when checkTemplates=true', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await deleteWorkflow(mockClient, {
+        workflowId: 'wf-123',
+        checkTemplates: true,
+      });
+
+      expect(result).toEqual({
+        success: true,
+        workflowId: 'wf-123',
+        checkOnly: true,
+        ...mockWorkflowDeleteCheckResult,
+      });
+    });
+
+    it('should require templateAction when published templates exist', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(deleteWorkflow(mockClient, { workflowId: 'wf-123' })).rejects.toThrow(
+        'templateAction'
+      );
+    });
+
+    it('should delete workflow when templateAction is provided', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await deleteWorkflow(mockClient, {
+        workflowId: 'wf-123',
+        templateAction: 'orphan',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        workflowId: 'wf-123',
+        deleted: true,
+        templateAction: 'orphan',
+      });
+      expect(mockClient.deleteWorkflow).toHaveBeenLastCalledWith({
+        workflowId: 'wf-123',
+        templateAction: 'orphan',
+      });
     });
   });
 });

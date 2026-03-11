@@ -10,6 +10,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { replaceWorkflowStateJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from './shared.js';
 
 /**
  * Tool name constant
@@ -58,6 +59,11 @@ export async function replaceWorkflowState(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, state: input.state },
+      REPLACE_WORKFLOW_STATE_TOOL_NAME
+    );
+
     logger.debug('Replacing workflow state', {
       operation: 'replace_workflow_state',
       workflowId: input.workflowId,

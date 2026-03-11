@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { toggleBlockEnabledJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -58,6 +59,11 @@ export async function toggleBlockEnabled(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, blockId: input.blockId, enabled: input.enabled },
+      TOGGLE_BLOCK_ENABLED_TOOL_NAME
+    );
+
     logger.debug('Toggling block enabled state', {
       operation: 'toggle_block_enabled',
       workflowId: input.workflowId,

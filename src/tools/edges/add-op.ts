@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { addEdgeOpJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -69,6 +70,11 @@ export async function addEdgeOp(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, source: input.source, target: input.target },
+      ADD_EDGE_OP_TOOL_NAME
+    );
+
     const edgeId = input.edgeId ?? generateEdgeId();
 
     logger.debug('Adding edge to workflow', {

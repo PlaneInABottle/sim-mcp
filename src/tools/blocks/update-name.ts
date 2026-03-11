@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { updateBlockNameJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -57,6 +58,11 @@ export async function updateBlockName(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, blockId: input.blockId, name: input.name },
+      UPDATE_BLOCK_NAME_TOOL_NAME
+    );
+
     logger.debug('Updating block name', {
       operation: 'update_block_name',
       workflowId: input.workflowId,

@@ -273,6 +273,44 @@ export interface DeployResult {
   deployedAt: string;
 }
 
+export interface WorkflowStatusResult {
+  isDeployed: boolean;
+  deployedAt: string | null;
+  isPublished?: boolean;
+  needsRedeployment: boolean;
+}
+
+export interface DeployedWorkflowStateResult {
+  deployedState: WorkflowState | null;
+}
+
+export interface WorkflowDeploymentResult {
+  apiKey: string | null;
+  isDeployed: boolean;
+  deployedAt: string | null;
+  needsRedeployment?: boolean;
+  isPublicApi?: boolean;
+  schedule?: {
+    id: string;
+    cronExpression?: string;
+    nextRunAt?: Date | string;
+  };
+  warnings?: string[];
+}
+
+export interface WorkflowDeleteTemplateSummary {
+  id: string;
+  name: string;
+  views: number;
+  stars: number;
+}
+
+export interface WorkflowDeleteCheckResult {
+  hasPublishedTemplates: boolean;
+  count: number;
+  publishedTemplates: WorkflowDeleteTemplateSummary[];
+}
+
 // ==========================================
 // Workflow Operations Types
 // ==========================================

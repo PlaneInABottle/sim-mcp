@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { addVariableJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -68,6 +69,16 @@ export async function addVariable(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      {
+        workflowId: input.workflowId,
+        name: input.name,
+        type: input.type,
+        value: input.value,
+      },
+      ADD_VARIABLE_TOOL_NAME
+    );
+
     const variableId = input.id ?? generateVariableId();
 
     logger.debug('Adding variable to workflow', {

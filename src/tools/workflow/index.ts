@@ -31,6 +31,49 @@ export {
 } from './create.js';
 export type { CreateWorkflowInput, CreateWorkflowOutput } from './create.js';
 
+export {
+  DELETE_WORKFLOW_DESCRIPTION,
+  DELETE_WORKFLOW_TOOL_NAME,
+  deleteWorkflow,
+  deleteWorkflowInputSchema,
+} from './delete.js';
+export type { DeleteWorkflowInput, DeleteWorkflowOutput } from './delete.js';
+
+export {
+  DEPLOY_WORKFLOW_DESCRIPTION,
+  DEPLOY_WORKFLOW_TOOL_NAME,
+  deployWorkflow,
+  deployWorkflowInputSchema,
+} from './deploy.js';
+export type { DeployWorkflowInput, DeployWorkflowOutput } from './deploy.js';
+
+export {
+  GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
+  GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
+  getDeployedWorkflowState,
+  getDeployedWorkflowStateInputSchema,
+} from './deployed-state.js';
+export type {
+  GetDeployedWorkflowStateInput,
+  GetDeployedWorkflowStateOutput,
+} from './deployed-state.js';
+
+export {
+  GET_WORKFLOW_STATUS_DESCRIPTION,
+  GET_WORKFLOW_STATUS_TOOL_NAME,
+  getWorkflowStatus,
+  getWorkflowStatusInputSchema,
+} from './status.js';
+export type { GetWorkflowStatusInput, GetWorkflowStatusOutput } from './status.js';
+
+export {
+  UNDEPLOY_WORKFLOW_DESCRIPTION,
+  UNDEPLOY_WORKFLOW_TOOL_NAME,
+  undeployWorkflow,
+  undeployWorkflowInputSchema,
+} from './undeploy.js';
+export type { UndeployWorkflowInput, UndeployWorkflowOutput } from './undeploy.js';
+
 // Replace workflow state tool
 export {
   REPLACE_WORKFLOW_STATE_DESCRIPTION,

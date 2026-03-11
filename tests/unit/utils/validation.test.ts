@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ValidationError } from '../../../src/client/errors.js';
-import { requireParam, requireParams } from '../../../src/utils/validation.js';
+import { requireAtLeastOneParam, requireParam, requireParams } from '../../../src/utils/validation.js';
 
 describe('Validation Utilities', () => {
   describe('requireParam', () => {
@@ -130,6 +130,23 @@ describe('Validation Utilities', () => {
       expect(() =>
         requireParams({ workspaceId: '   ' }, 'list_skills')
       ).toThrow(ValidationError);
+    });
+  });
+
+  describe('requireAtLeastOneParam', () => {
+    it('should pass when one parameter is present', () => {
+      expect(() =>
+        requireAtLeastOneParam({ workspaceId: 'ws-123', workflowId: undefined }, 'list_custom_tools')
+      ).not.toThrow();
+    });
+
+    it('should throw ValidationError when all parameters are missing', () => {
+      expect(() =>
+        requireAtLeastOneParam({ workspaceId: '', workflowId: undefined }, 'list_custom_tools')
+      ).toThrow(ValidationError);
+      expect(() =>
+        requireAtLeastOneParam({ workspaceId: '', workflowId: undefined }, 'list_custom_tools')
+      ).toThrow("One of 'workspaceId', 'workflowId' is required for list_custom_tools");
     });
   });
 });

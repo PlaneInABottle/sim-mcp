@@ -267,12 +267,14 @@ export function isRetryableError(error: unknown): boolean {
 export function formatMcpError(error: unknown): {
   code: string;
   message: string;
+  statusCode?: number;
   data?: Record<string, unknown>;
 } {
   if (error instanceof SimApiError) {
     return {
       code: error.code,
       message: error.message,
+      statusCode: error.statusCode,
       data: error.details ? { details: error.details } : undefined,
     };
   }

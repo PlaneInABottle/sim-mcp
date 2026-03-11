@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { updateSubblockJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -59,6 +60,16 @@ export async function updateSubblock(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      {
+        workflowId: input.workflowId,
+        blockId: input.blockId,
+        subblockId: input.subblockId,
+        value: input.value,
+      },
+      UPDATE_SUBBLOCK_TOOL_NAME
+    );
+
     logger.debug('Updating subblock', {
       operation: 'update_subblock',
       workflowId: input.workflowId,

@@ -12,6 +12,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { CustomTool, CustomToolInput } from '../../schemas/custom-tools.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -128,6 +129,11 @@ export async function upsertCustomTools(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workspaceId: input.workspaceId, tools: input.tools },
+      UPSERT_CUSTOM_TOOLS_TOOL_NAME
+    );
+
     logger.debug('Upserting custom tools', {
       operation: 'upsert_custom_tools',
       workspaceId: input.workspaceId,

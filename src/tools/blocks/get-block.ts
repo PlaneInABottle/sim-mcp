@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { Block } from '../../schemas/workflow.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -70,6 +71,11 @@ export async function getBlock(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, blockId: input.blockId },
+      GET_BLOCK_TOOL_NAME
+    );
+
     logger.debug('Getting block from workflow', {
       operation: 'get_block',
       workflowId: input.workflowId,

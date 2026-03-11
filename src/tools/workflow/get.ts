@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { WorkflowWithBlocks } from '../../schemas/workflow.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from './shared.js';
 
 /**
  * Tool name constant
@@ -105,6 +106,8 @@ export async function getWorkflow(
   const verbose = input.verbose ?? false;
 
   try {
+    validateRequiredParams({ workflowId: input.workflowId }, GET_WORKFLOW_TOOL_NAME);
+
     logger.debug('Getting workflow', {
       operation: 'get_workflow',
       workflowId: input.workflowId,

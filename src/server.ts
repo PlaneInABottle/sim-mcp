@@ -29,11 +29,17 @@ import {
   // Create workflow tool
   CREATE_WORKFLOW_DESCRIPTION,
   CREATE_WORKFLOW_TOOL_NAME,
+  DELETE_WORKFLOW_DESCRIPTION,
+  DELETE_WORKFLOW_TOOL_NAME,
+  DEPLOY_WORKFLOW_DESCRIPTION,
+  DEPLOY_WORKFLOW_TOOL_NAME,
   // Execute workflow tool
   EXECUTE_WORKFLOW_DESCRIPTION,
   EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
   GET_BLOCK_TOOL_NAME,
+  GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
+  GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
   // Execution logs tools
   GET_EXECUTION_LOGS_DESCRIPTION,
   GET_EXECUTION_LOGS_TOOL_NAME,
@@ -53,6 +59,8 @@ import {
   GET_SKILL_TOOL_NAME,
   CREATE_SKILL_DESCRIPTION,
   CREATE_SKILL_TOOL_NAME,
+  GET_WORKFLOW_STATUS_DESCRIPTION,
+  GET_WORKFLOW_STATUS_TOOL_NAME,
   UPDATE_SKILL_DESCRIPTION,
   UPDATE_SKILL_TOOL_NAME,
   DELETE_SKILL_DESCRIPTION,
@@ -68,6 +76,8 @@ import {
   REMOVE_VARIABLE_TOOL_NAME,
   REPLACE_WORKFLOW_STATE_DESCRIPTION,
   REPLACE_WORKFLOW_STATE_TOOL_NAME,
+  UNDEPLOY_WORKFLOW_DESCRIPTION,
+  UNDEPLOY_WORKFLOW_TOOL_NAME,
   TOGGLE_BLOCK_ENABLED_DESCRIPTION,
   TOGGLE_BLOCK_ENABLED_TOOL_NAME,
   UPDATE_BLOCK_NAME_DESCRIPTION,
@@ -88,18 +98,26 @@ import {
   addVariableInputSchema,
   createWorkflow,
   createWorkflowInputSchema,
+  deleteWorkflow,
+  deleteWorkflowInputSchema,
+  deployWorkflow,
+  deployWorkflowInputSchema,
   executeWorkflow,
   executeWorkflowInputSchema,
   getBlock,
   getBlockInputSchema,
   getCustomTool,
   getCustomToolInputSchema,
+  getDeployedWorkflowState,
+  getDeployedWorkflowStateInputSchema,
   getExecutionLogs,
   getExecutionLogsInputSchema,
   getExecutionLogDetail,
   getExecutionLogDetailInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
+  getWorkflowStatus,
+  getWorkflowStatusInputSchema,
   listCustomTools,
   listCustomToolsInputSchema,
   listWorkflows,
@@ -114,6 +132,8 @@ import {
   replaceWorkflowStateInputSchema,
   toggleBlockEnabled,
   toggleBlockEnabledInputSchema,
+  undeployWorkflow,
+  undeployWorkflowInputSchema,
   updateBlockName,
   updateBlockNameInputSchema,
   updateBlockParent,
@@ -222,6 +242,31 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: CREATE_WORKFLOW_TOOL_NAME,
       description: CREATE_WORKFLOW_DESCRIPTION,
       inputSchema: createWorkflowInputSchema,
+    },
+    {
+      name: DELETE_WORKFLOW_TOOL_NAME,
+      description: DELETE_WORKFLOW_DESCRIPTION,
+      inputSchema: deleteWorkflowInputSchema,
+    },
+    {
+      name: GET_WORKFLOW_STATUS_TOOL_NAME,
+      description: GET_WORKFLOW_STATUS_DESCRIPTION,
+      inputSchema: getWorkflowStatusInputSchema,
+    },
+    {
+      name: GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
+      description: GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
+      inputSchema: getDeployedWorkflowStateInputSchema,
+    },
+    {
+      name: DEPLOY_WORKFLOW_TOOL_NAME,
+      description: DEPLOY_WORKFLOW_DESCRIPTION,
+      inputSchema: deployWorkflowInputSchema,
+    },
+    {
+      name: UNDEPLOY_WORKFLOW_TOOL_NAME,
+      description: UNDEPLOY_WORKFLOW_DESCRIPTION,
+      inputSchema: undeployWorkflowInputSchema,
     },
     // Execution logs tools
     {
@@ -347,6 +392,9 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
     return { tools };
   });
 
+  const parseToolArguments = <T extends Record<string, unknown>>(args: unknown): T =>
+    ((args ?? {}) as T);
+
   // Handle tool calls
   server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
     const { name, arguments: args } = request.params;
@@ -363,49 +411,88 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
 
         // Workflow tools
         case LIST_WORKFLOWS_TOOL_NAME: {
-          const input = args as { workspaceId?: string; limit?: number; offset?: number };
+          const input = parseToolArguments<{ workspaceId?: string; limit?: number; offset?: number }>(
+            args
+          );
           const result = await listWorkflows(apiClient, input);
           return createResponse(result);
         }
 
         case GET_WORKFLOW_TOOL_NAME: {
-          const input = args as { workflowId: string; verbose?: boolean };
+          const input = parseToolArguments<{ workflowId: string; verbose?: boolean }>(args);
           const result = await getWorkflow(apiClient, input);
           return createResponse(result);
         }
 
         case REPLACE_WORKFLOW_STATE_TOOL_NAME: {
-          const input = args as { workflowId: string; state: Record<string, unknown> };
+          const input = parseToolArguments<{
+            workflowId: string;
+            state: Record<string, unknown>;
+          }>(args);
           const result = await replaceWorkflowState(apiClient, input);
           return createResponse(result);
         }
 
         case EXECUTE_WORKFLOW_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             input?: Record<string, unknown>;
             triggerType?: string;
-          };
+          }>(args);
           const result = await executeWorkflow(apiClient, input);
           return createResponse(result);
         }
 
         case CREATE_WORKFLOW_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             name: string;
             workspaceId: string;
             description?: string;
             color?: string;
             folderId?: string;
             sortOrder?: number;
-          };
+          }>(args);
           const result = await createWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case DELETE_WORKFLOW_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            checkTemplates?: boolean;
+            templateAction?: 'delete' | 'orphan';
+          }>(args);
+          const result = await deleteWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case GET_WORKFLOW_STATUS_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await getWorkflowStatus(apiClient, input);
+          return createResponse(result);
+        }
+
+        case GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await getDeployedWorkflowState(apiClient, input);
+          return createResponse(result);
+        }
+
+        case DEPLOY_WORKFLOW_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await deployWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UNDEPLOY_WORKFLOW_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await undeployWorkflow(apiClient, input);
           return createResponse(result);
         }
 
         // Execution logs tools
         case GET_EXECUTION_LOGS_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workspaceId: string;
             workflowId?: string;
             executionId?: string;
@@ -423,26 +510,26 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             details?: 'basic' | 'full';
             includeTraceSpans?: boolean;
             includeFinalOutput?: boolean;
-          };
+          }>(args);
           const result = await getExecutionLogs(apiClient, input);
           return createResponse(result);
         }
 
         case GET_EXECUTION_LOG_DETAIL_TOOL_NAME: {
-          const input = args as { logId: string };
+          const input = parseToolArguments<{ logId: string }>(args);
           const result = await getExecutionLogDetail(apiClient, input);
           return createResponse(result);
         }
 
         // Block tools
         case GET_BLOCK_TOOL_NAME: {
-          const input = args as { workflowId: string; blockId: string };
+          const input = parseToolArguments<{ workflowId: string; blockId: string }>(args);
           const result = await getBlock(apiClient, input);
           return createResponse(result);
         }
 
         case ADD_BLOCKS_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             blocks: Array<{
               id?: string;
@@ -459,112 +546,126 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
               sourceHandle?: string | null;
               targetHandle?: string | null;
             }>;
-          };
+          }>(args);
           const result = await addBlocks(apiClient, input);
           return createResponse(result);
         }
 
         case REMOVE_BLOCKS_TOOL_NAME: {
-          const input = args as { workflowId: string; blockIds: string[] };
+          const input = parseToolArguments<{ workflowId: string; blockIds: string[] }>(args);
           const result = await removeBlocks(apiClient, input);
           return createResponse(result);
         }
 
         case UPDATE_BLOCK_NAME_TOOL_NAME: {
-          const input = args as { workflowId: string; blockId: string; name: string };
+          const input = parseToolArguments<{ workflowId: string; blockId: string; name: string }>(
+            args
+          );
           const result = await updateBlockName(apiClient, input);
           return createResponse(result);
         }
 
         case TOGGLE_BLOCK_ENABLED_TOOL_NAME: {
-          const input = args as { workflowId: string; blockId: string; enabled: boolean };
+          const input = parseToolArguments<{
+            workflowId: string;
+            blockId: string;
+            enabled: boolean;
+          }>(args);
           const result = await toggleBlockEnabled(apiClient, input);
           return createResponse(result);
         }
 
         case UPDATE_BLOCK_PARENT_TOOL_NAME: {
-          const input = args as { workflowId: string; blockId: string; parentId: string | null };
+          const input = parseToolArguments<{
+            workflowId: string;
+            blockId: string;
+            parentId: string | null;
+          }>(args);
           const result = await updateBlockParent(apiClient, input);
           return createResponse(result);
         }
 
         case UPDATE_SUBBLOCK_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             blockId: string;
             subblockId: string;
             value: unknown;
-          };
+          }>(args);
           const result = await updateSubblock(apiClient, input);
           return createResponse(result);
         }
 
         // Edge tools
         case ADD_EDGE_OP_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             source: string;
             target: string;
             sourceHandle?: string;
             targetHandle?: string;
             edgeId?: string;
-          };
+          }>(args);
           const result = await addEdgeOp(apiClient, input);
           return createResponse(result);
         }
 
         case REMOVE_EDGE_OP_TOOL_NAME: {
-          const input = args as { workflowId: string; edgeId: string };
+          const input = parseToolArguments<{ workflowId: string; edgeId: string }>(args);
           const result = await removeEdgeOp(apiClient, input);
           return createResponse(result);
         }
 
         // Variable tools
         case ADD_VARIABLE_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             id?: string;
             name: string;
             type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'plain';
             value: unknown;
-          };
+          }>(args);
           const result = await addVariable(apiClient, input);
           return createResponse(result);
         }
 
         case REMOVE_VARIABLE_TOOL_NAME: {
-          const input = args as { workflowId: string; variableId: string };
+          const input = parseToolArguments<{ workflowId: string; variableId: string }>(args);
           const result = await removeVariable(apiClient, input);
           return createResponse(result);
         }
 
         // Subflow tools
         case UPDATE_SUBFLOW_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workflowId: string;
             id: string;
             type?: 'loop' | 'parallel';
             config?: Record<string, unknown>;
-          };
+          }>(args);
           const result = await updateSubflow(apiClient, input);
           return createResponse(result);
         }
 
         // Custom tools
         case LIST_CUSTOM_TOOLS_TOOL_NAME: {
-          const input = args as { workspaceId?: string; workflowId?: string };
+          const input = parseToolArguments<{ workspaceId?: string; workflowId?: string }>(args);
           const result = await listCustomTools(apiClient, input);
           return createResponse(result);
         }
 
         case GET_CUSTOM_TOOL_TOOL_NAME: {
-          const input = args as { workspaceId?: string; workflowId?: string; toolId: string };
+          const input = parseToolArguments<{
+            workspaceId?: string;
+            workflowId?: string;
+            toolId: string;
+          }>(args);
           const result = await getCustomTool(apiClient, input);
           return createResponse(result);
         }
 
         case UPSERT_CUSTOM_TOOLS_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workspaceId: string;
             tools: Array<{
               id?: string;
@@ -583,49 +684,49 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
               };
               code: string;
             }>;
-          };
+          }>(args);
           const result = await upsertCustomTools(apiClient, input);
           return createResponse(result);
         }
 
         // Skills tools
         case LIST_SKILLS_TOOL_NAME: {
-          const input = args as { workspaceId: string };
+          const input = parseToolArguments<{ workspaceId: string }>(args);
           const result = await listSkills(apiClient, input);
           return createResponse(result);
         }
 
         case GET_SKILL_TOOL_NAME: {
-          const input = args as { workspaceId: string; id: string };
+          const input = parseToolArguments<{ workspaceId: string; id: string }>(args);
           const result = await getSkill(apiClient, input);
           return createResponse(result);
         }
 
         case CREATE_SKILL_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workspaceId: string;
             name: string;
             description: string;
             content: string;
-          };
+          }>(args);
           const result = await createSkill(apiClient, input);
           return createResponse(result);
         }
 
         case UPDATE_SKILL_TOOL_NAME: {
-          const input = args as {
+          const input = parseToolArguments<{
             workspaceId: string;
             id: string;
             name: string;
             description: string;
             content: string;
-          };
+          }>(args);
           const result = await updateSkill(apiClient, input);
           return createResponse(result);
         }
 
         case DELETE_SKILL_TOOL_NAME: {
-          const input = args as { workspaceId: string; id: string };
+          const input = parseToolArguments<{ workspaceId: string; id: string }>(args);
           const result = await deleteSkill(apiClient, input);
           return createResponse(result);
         }

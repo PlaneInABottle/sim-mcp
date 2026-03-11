@@ -10,6 +10,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { updateBlockParentJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -59,6 +60,11 @@ export async function updateBlockParent(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, blockId: input.blockId },
+      UPDATE_BLOCK_PARENT_TOOL_NAME
+    );
+
     logger.debug('Updating block parent', {
       operation: 'update_block_parent',
       workflowId: input.workflowId,

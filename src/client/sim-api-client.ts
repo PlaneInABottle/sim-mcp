@@ -26,12 +26,16 @@ import {
 } from './errors.js';
 import type {
   ApiResponse,
+  DeployedWorkflowStateResult,
   HttpMethod,
   OperationRequest,
   OperationResponse,
   RequestOptions,
+  WorkflowDeleteCheckResult,
+  WorkflowDeploymentResult,
   WorkflowExportPayload,
   WorkflowState,
+  WorkflowStatusResult,
 } from './types.js';
 
 /**
@@ -411,6 +415,43 @@ export class SimApiClient {
   ): Promise<Workflow> {
     // put() auto-unwraps { data: ... } response
     return await this.put<Workflow>(`/api/workflows/${workflowId}`, data);
+  }
+
+  async getWorkflowStatus(workflowId: string): Promise<WorkflowStatusResult> {
+    return this.get<WorkflowStatusResult>(`/api/workflows/${workflowId}/status`);
+  }
+
+  async getDeployedWorkflowState(workflowId: string): Promise<DeployedWorkflowStateResult> {
+    return this.get<DeployedWorkflowStateResult>(`/api/workflows/${workflowId}/deployed`);
+  }
+
+  async deployWorkflow(workflowId: string): Promise<WorkflowDeploymentResult> {
+    return this.post<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`);
+  }
+
+  async undeployWorkflow(workflowId: string): Promise<WorkflowDeploymentResult> {
+    return this.delete<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`);
+  }
+
+  async deleteWorkflow(options: {
+    workflowId: string;
+    checkTemplates?: boolean;
+    templateAction?: 'delete' | 'orphan';
+  }): Promise<WorkflowDeleteCheckResult | undefined> {
+    const query: Record<string, string> = {};
+
+    if (options.checkTemplates) {
+      query['check-templates'] = 'true';
+    }
+
+    if (options.templateAction) {
+      query.deleteTemplates = options.templateAction === 'delete' ? 'delete' : 'false';
+    }
+
+    return this.delete<WorkflowDeleteCheckResult | undefined>(
+      `/api/workflows/${options.workflowId}`,
+      query
+    );
   }
 
   // ==========================================

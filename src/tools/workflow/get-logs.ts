@@ -8,6 +8,7 @@
 
 import type { SimApiClient } from '../../client/index.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from './shared.js';
 
 // ==========================================
 // get_execution_logs
@@ -157,6 +158,8 @@ export async function getExecutionLogs(
   const logger = getLogger();
 
   try {
+    validateRequiredParams({ workspaceId: input.workspaceId }, GET_EXECUTION_LOGS_TOOL_NAME);
+
     logger.debug('Fetching execution logs', {
       operation: 'get_execution_logs',
       workspaceId: input.workspaceId,
@@ -244,6 +247,8 @@ export async function getExecutionLogDetail(
   const logger = getLogger();
 
   try {
+    validateRequiredParams({ logId: input.logId }, GET_EXECUTION_LOG_DETAIL_TOOL_NAME);
+
     logger.debug('Fetching execution log detail', {
       operation: 'get_execution_log_detail',
       logId: input.logId,

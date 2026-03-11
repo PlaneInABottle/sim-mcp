@@ -19,7 +19,6 @@ import {
   createMockSimApiClient,
   mockCustomTool,
   mockCustomToolNoDesc,
-  mockCustomTools,
 } from '../../mocks/sim-api.js';
 
 // Mock the logger to avoid output during tests
@@ -127,6 +126,14 @@ describe('Custom Tools', () => {
       expect(result.tools).toEqual([]);
     });
 
+    it('should require workspaceId or workflowId', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(listCustomTools(mockClient, {})).rejects.toThrow(
+        "One of 'workspaceId', 'workflowId' is required for list_custom_tools"
+      );
+    });
+
     it('should pass workspaceId to API client', async () => {
       const mockClient = createMockSimApiClient();
 
@@ -225,6 +232,14 @@ describe('Custom Tools', () => {
           toolId: 'non-existent-tool',
         })
       ).rejects.toThrow("Custom tool with ID 'non-existent-tool' not found");
+    });
+
+    it('should require workspaceId or workflowId', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(getCustomTool(mockClient, { toolId: 'ct-1' })).rejects.toThrow(
+        "One of 'workspaceId', 'workflowId' is required for get_custom_tool"
+      );
     });
 
     it('should throw descriptive error with the tool ID in message', async () => {

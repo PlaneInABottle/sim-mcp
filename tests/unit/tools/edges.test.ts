@@ -100,6 +100,18 @@ describe('Edge Operation Tools', () => {
         })
       ).rejects.toThrow('Add edge failed');
     });
+
+    it('should require source and target', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        addEdgeOp(mockClient, {
+          workflowId: 'wf-123',
+          source: '',
+          target: 'block-2',
+        })
+      ).rejects.toThrow("Missing required parameter 'source' for add_edge");
+    });
   });
 
   describe('removeEdgeOp', () => {

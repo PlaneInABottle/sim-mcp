@@ -61,3 +61,28 @@ export function requireParams(
     );
   }
 }
+
+/**
+ * Validate that at least one parameter from a set is present and non-empty.
+ *
+ * @param params - Record of parameter names to their values
+ * @param toolName - The tool name (for error messages)
+ * @throws ValidationError when none of the parameters are provided
+ */
+export function requireAtLeastOneParam(
+  params: Record<string, unknown>,
+  toolName: string
+): void {
+  const provided = Object.entries(params).some(
+    ([, value]) =>
+      value !== undefined && value !== null && !(typeof value === 'string' && value.trim() === '')
+  );
+
+  if (!provided) {
+    const parameterNames = Object.keys(params);
+    throw new ValidationError(
+      `One of ${parameterNames.map((name) => `'${name}'`).join(', ')} is required for ${toolName}`,
+      { parameters: parameterNames, tool: toolName }
+    );
+  }
+}

@@ -8,6 +8,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { Workflow } from '../../schemas/workflow.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from './shared.js';
 
 /**
  * Tool name constant
@@ -88,6 +89,8 @@ export async function createWorkflow(
   const logger = getLogger();
 
   try {
+    validateRequiredParams({ name: input.name, workspaceId: input.workspaceId }, CREATE_WORKFLOW_TOOL_NAME);
+
     logger.debug('Creating workflow', {
       operation: 'create_workflow',
       name: input.name,

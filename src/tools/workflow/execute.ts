@@ -7,6 +7,7 @@
 
 import type { SimApiClient } from '../../client/index.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from './shared.js';
 
 /**
  * Tool name constant
@@ -89,6 +90,8 @@ export async function executeWorkflow(
   const logger = getLogger();
 
   try {
+    validateRequiredParams({ workflowId: input.workflowId }, EXECUTE_WORKFLOW_TOOL_NAME);
+
     logger.debug('Executing workflow', {
       operation: 'execute_workflow',
       workflowId: input.workflowId,

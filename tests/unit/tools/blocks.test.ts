@@ -145,6 +145,17 @@ describe('Block Operation Tools', () => {
         })
       ).rejects.toThrow('Operation failed');
     });
+
+    it('should require workflowId', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        addBlocks(mockClient, {
+          workflowId: '',
+          blocks: [{ type: 'agent', name: 'Test', position: { x: 0, y: 0 } }],
+        })
+      ).rejects.toThrow("Missing required parameter 'workflowId' for add_blocks");
+    });
   });
 
   describe('removeBlocks', () => {
@@ -421,6 +432,19 @@ describe('Block Operation Tools', () => {
           value: 'test',
         })
       ).rejects.toThrow('Subblock update failed');
+    });
+
+    it('should require subblockId', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        updateSubblock(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          subblockId: '',
+          value: 'test',
+        })
+      ).rejects.toThrow("Missing required parameter 'subblockId' for update_subblock");
     });
   });
 });

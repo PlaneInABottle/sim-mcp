@@ -10,6 +10,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { addBlocksJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -78,6 +79,11 @@ export async function addBlocks(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, blocks: input.blocks },
+      ADD_BLOCKS_TOOL_NAME
+    );
+
     logger.debug('Adding blocks to workflow', {
       operation: 'add_blocks',
       workflowId: input.workflowId,

@@ -152,6 +152,45 @@ export const mockOperationResponse: OperationResponse = {
   broadcastSent: true,
 };
 
+export const mockWorkflowStatus = {
+  isDeployed: true,
+  deployedAt: '2024-01-16T12:00:00Z',
+  isPublished: false,
+  needsRedeployment: false,
+};
+
+export const mockDeployedWorkflowState = {
+  deployedState: {
+    blocks: {},
+    edges: [],
+    loops: {},
+    parallels: {},
+    variables: [],
+  },
+};
+
+export const mockWorkflowDeploymentResult = {
+  apiKey: 'Workspace API keys',
+  isDeployed: true,
+  deployedAt: '2024-01-16T12:00:00Z',
+  needsRedeployment: false,
+  isPublicApi: false,
+  warnings: [],
+};
+
+export const mockWorkflowDeleteCheckResult = {
+  hasPublishedTemplates: true,
+  count: 1,
+  publishedTemplates: [
+    {
+      id: 'template-1',
+      name: 'Published Template',
+      views: 12,
+      stars: 3,
+    },
+  ],
+};
+
 /**
  * Sample block with full config for export (including subBlocks, data)
  */
@@ -297,6 +336,10 @@ export function createMockSimApiClient(
     listWorkflows: [],
     getWorkflow: [],
     deleteWorkflow: [],
+    getWorkflowStatus: [],
+    getDeployedWorkflowState: [],
+    deployWorkflow: [],
+    undeployWorkflow: [],
     executeWorkflow: [],
     // New operation-based methods
     workflowOperation: [],
@@ -331,11 +374,35 @@ export function createMockSimApiClient(
       }
       return { ...mockWorkflowWithBlocks, id: workflowId };
     },
-    deleteWorkflow: async (workflowId) => {
-      callHistory.deleteWorkflow.push(workflowId);
-      if (workflowId === 'not-found') {
+    deleteWorkflow: async (options) => {
+      callHistory.deleteWorkflow.push(options);
+      if (options.workflowId === 'not-found') {
         throw new Error('Workflow not found');
       }
+      if (options.checkTemplates) {
+        return mockWorkflowDeleteCheckResult;
+      }
+    },
+    getWorkflowStatus: async (workflowId) => {
+      callHistory.getWorkflowStatus.push(workflowId);
+      return { ...mockWorkflowStatus };
+    },
+    getDeployedWorkflowState: async (workflowId) => {
+      callHistory.getDeployedWorkflowState.push(workflowId);
+      return { ...mockDeployedWorkflowState };
+    },
+    deployWorkflow: async (workflowId) => {
+      callHistory.deployWorkflow.push(workflowId);
+      return { ...mockWorkflowDeploymentResult };
+    },
+    undeployWorkflow: async (workflowId) => {
+      callHistory.undeployWorkflow.push(workflowId);
+      return {
+        ...mockWorkflowDeploymentResult,
+        apiKey: null,
+        isDeployed: false,
+        deployedAt: null,
+      };
     },
     executeWorkflow: async (workflowId, input) => {
       callHistory.executeWorkflow.push({ workflowId, input });
@@ -437,6 +504,10 @@ export function createMockSimApiClient(
     listWorkflows: vi.fn(methods.listWorkflows),
     getWorkflow: vi.fn(methods.getWorkflow),
     deleteWorkflow: vi.fn(methods.deleteWorkflow),
+    getWorkflowStatus: vi.fn(methods.getWorkflowStatus),
+    getDeployedWorkflowState: vi.fn(methods.getDeployedWorkflowState),
+    deployWorkflow: vi.fn(methods.deployWorkflow),
+    undeployWorkflow: vi.fn(methods.undeployWorkflow),
     executeWorkflow: vi.fn(methods.executeWorkflow),
 
     // Operation-based methods
@@ -480,7 +551,22 @@ export interface MockSimApiClientMethods {
     Workflow[]
   >;
   getWorkflow: (workflowId: string) => Promise<WorkflowWithBlocks>;
-  deleteWorkflow: (workflowId: string) => Promise<void>;
+  deleteWorkflow: (options: {
+    workflowId: string;
+    checkTemplates?: boolean;
+    templateAction?: 'delete' | 'orphan';
+  }) => Promise<typeof mockWorkflowDeleteCheckResult | undefined>;
+  getWorkflowStatus: (workflowId: string) => Promise<typeof mockWorkflowStatus>;
+  getDeployedWorkflowState: (workflowId: string) => Promise<typeof mockDeployedWorkflowState>;
+  deployWorkflow: (workflowId: string) => Promise<typeof mockWorkflowDeploymentResult>;
+  undeployWorkflow: (workflowId: string) => Promise<{
+    apiKey: null;
+    isDeployed: false;
+    deployedAt: null;
+    needsRedeployment: false;
+    isPublicApi: false;
+    warnings: never[];
+  }>;
   executeWorkflow: (
     workflowId: string,
     input?: Record<string, unknown>
@@ -556,7 +642,15 @@ export interface MockSimApiClientMethods {
 export interface MockCallHistory {
   listWorkflows: Array<{ workspaceId?: string; limit?: number; offset?: number } | undefined>;
   getWorkflow: string[];
-  deleteWorkflow: string[];
+  deleteWorkflow: Array<{
+    workflowId: string;
+    checkTemplates?: boolean;
+    templateAction?: 'delete' | 'orphan';
+  }>;
+  getWorkflowStatus: string[];
+  getDeployedWorkflowState: string[];
+  deployWorkflow: string[];
+  undeployWorkflow: string[];
   executeWorkflow: Array<{ workflowId: string; input?: Record<string, unknown> }>;
   // Operation-based methods
   workflowOperation: Array<{

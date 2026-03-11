@@ -9,6 +9,7 @@ import type { OperationResponse } from '../../client/types.js';
 import { removeEdgeOpJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -57,6 +58,11 @@ export async function removeEdgeOp(
   const logger = getLogger();
 
   try {
+    validateRequiredParams(
+      { workflowId: input.workflowId, edgeId: input.edgeId },
+      REMOVE_EDGE_OP_TOOL_NAME
+    );
+
     logger.debug('Removing edge from workflow', {
       operation: 'remove_edge',
       workflowId: input.workflowId,

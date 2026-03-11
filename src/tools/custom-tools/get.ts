@@ -9,6 +9,7 @@
 import type { SimApiClient } from '../../client/index.js';
 import type { CustomTool } from '../../schemas/custom-tools.js';
 import { getLogger } from '../../utils/logger.js';
+import { validateAtLeastOneParam, validateRequiredParams } from '../workflow/shared.js';
 
 /**
  * Tool name constant
@@ -79,6 +80,12 @@ export async function getCustomTool(
   const logger = getLogger();
 
   try {
+    validateRequiredParams({ toolId: input.toolId }, GET_CUSTOM_TOOL_TOOL_NAME);
+    validateAtLeastOneParam(
+      { workspaceId: input.workspaceId, workflowId: input.workflowId },
+      GET_CUSTOM_TOOL_TOOL_NAME
+    );
+
     logger.debug('Getting custom tool', {
       operation: 'get_custom_tool',
       workspaceId: input.workspaceId,
