@@ -87,6 +87,16 @@ function getRetryDelay(attempt: number): number {
   return RETRY_DELAY_BASE * 2 ** attempt;
 }
 
+function setQueryParamIfDefined(
+  queryParams: Record<string, string | number | boolean>,
+  key: string,
+  value: string | number | boolean | undefined
+): void {
+  if (value !== undefined && value !== null && value !== '') {
+    queryParams[key] = value;
+  }
+}
+
 /**
  * SimApiClient - HTTP client for sim API communication
  */
@@ -203,9 +213,8 @@ export class SimApiClient {
       const apiError = axiosError.response.data?.error;
 
       // Handle both string and object error formats from backend
-      const message = typeof apiError === 'string' 
-        ? apiError 
-        : apiError?.message ?? axiosError.message;
+      const message =
+        typeof apiError === 'string' ? apiError : (apiError?.message ?? axiosError.message);
       const details = typeof apiError === 'object' ? apiError?.details : undefined;
       return mapHttpError(status, message, details);
     }
@@ -715,6 +724,11 @@ export class SimApiClient {
       input?: Record<string, unknown>;
       triggerType?: string;
       useDraftState?: boolean;
+      stopAfterBlockId?: string;
+      runFromBlock?: {
+        startBlockId: string;
+        executionId?: string;
+      };
     }
   ): Promise<{
     success: boolean;
@@ -738,10 +752,34 @@ export class SimApiClient {
     if (options?.useDraftState !== undefined) {
       body.useDraftState = options.useDraftState;
     }
+    if (options?.stopAfterBlockId) {
+      body.stopAfterBlockId = options.stopAfterBlockId;
+    }
+    if (options?.runFromBlock) {
+      body.runFromBlock = options.runFromBlock;
+    }
 
     return this.post(`/api/workflows/${workflowId}/execute`, body, {
       timeout: 120000, // Workflow execution may take longer
     });
+  }
+
+  /**
+   * Cancel an active workflow execution
+   *
+   * @param workflowId - The workflow ID
+   * @param executionId - The execution ID to cancel
+   * @returns Cancellation result
+   */
+  async cancelExecution(
+    workflowId: string,
+    executionId: string
+  ): Promise<{
+    success: boolean;
+    executionId: string;
+    redisAvailable?: boolean;
+  }> {
+    return this.post(`/api/workflows/${workflowId}/executions/${executionId}/cancel`);
   }
 
   // ==========================================
@@ -781,54 +819,22 @@ export class SimApiClient {
       workspaceId: params.workspaceId,
     };
 
-    if (params.workflowId) {
-      queryParams.workflowIds = params.workflowId;
-    }
-    if (params.executionId) {
-      queryParams.executionId = params.executionId;
-    }
-    if (params.level) {
-      queryParams.level = params.level;
-    }
-    if (params.startDate) {
-      queryParams.startDate = params.startDate;
-    }
-    if (params.endDate) {
-      queryParams.endDate = params.endDate;
-    }
-    if (params.minDurationMs !== undefined) {
-      queryParams.minDurationMs = params.minDurationMs;
-    }
-    if (params.maxDurationMs !== undefined) {
-      queryParams.maxDurationMs = params.maxDurationMs;
-    }
-    if (params.minCost !== undefined) {
-      queryParams.minCost = params.minCost;
-    }
-    if (params.maxCost !== undefined) {
-      queryParams.maxCost = params.maxCost;
-    }
-    if (params.trigger) {
-      queryParams.triggers = params.trigger;
-    }
-    if (params.limit !== undefined) {
-      queryParams.limit = params.limit;
-    }
-    if (params.cursor) {
-      queryParams.cursor = params.cursor;
-    }
-    if (params.order) {
-      queryParams.order = params.order;
-    }
-    if (params.details) {
-      queryParams.details = params.details;
-    }
-    if (params.includeTraceSpans !== undefined) {
-      queryParams.includeTraceSpans = params.includeTraceSpans;
-    }
-    if (params.includeFinalOutput !== undefined) {
-      queryParams.includeFinalOutput = params.includeFinalOutput;
-    }
+    setQueryParamIfDefined(queryParams, 'workflowIds', params.workflowId);
+    setQueryParamIfDefined(queryParams, 'executionId', params.executionId);
+    setQueryParamIfDefined(queryParams, 'level', params.level);
+    setQueryParamIfDefined(queryParams, 'startDate', params.startDate);
+    setQueryParamIfDefined(queryParams, 'endDate', params.endDate);
+    setQueryParamIfDefined(queryParams, 'minDurationMs', params.minDurationMs);
+    setQueryParamIfDefined(queryParams, 'maxDurationMs', params.maxDurationMs);
+    setQueryParamIfDefined(queryParams, 'minCost', params.minCost);
+    setQueryParamIfDefined(queryParams, 'maxCost', params.maxCost);
+    setQueryParamIfDefined(queryParams, 'triggers', params.trigger);
+    setQueryParamIfDefined(queryParams, 'limit', params.limit);
+    setQueryParamIfDefined(queryParams, 'cursor', params.cursor);
+    setQueryParamIfDefined(queryParams, 'order', params.order);
+    setQueryParamIfDefined(queryParams, 'details', params.details);
+    setQueryParamIfDefined(queryParams, 'includeTraceSpans', params.includeTraceSpans);
+    setQueryParamIfDefined(queryParams, 'includeFinalOutput', params.includeFinalOutput);
 
     return this.get<{
       data: Array<Record<string, unknown>>;
@@ -952,10 +958,7 @@ export class SimApiClient {
     };
 
     // get() auto-unwraps { data: ... } response
-    const skills = await this.get<Skill[]>(
-      '/api/skills',
-      queryParams
-    );
+    const skills = await this.get<Skill[]>('/api/skills', queryParams);
 
     return Array.isArray(skills) ? skills : [];
   }

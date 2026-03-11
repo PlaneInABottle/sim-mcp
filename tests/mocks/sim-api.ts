@@ -137,9 +137,60 @@ export const mockDeployedWorkflow: Workflow = {
  * Sample execution result
  */
 export const mockExecutionResult: ExecutionResult = {
+  success: true,
   executionId: 'exec-abc123',
   status: 'completed',
   output: { result: 'success', data: { message: 'Hello World' } },
+  metadata: {
+    duration: 5000,
+    startTime: '2024-01-15T10:00:00.000Z',
+    endTime: '2024-01-15T10:00:05.000Z',
+  },
+} as ExecutionResult & {
+  success: boolean;
+  metadata?: {
+    duration?: number;
+    startTime?: string;
+    endTime?: string;
+  };
+};
+
+export const mockExecutionLogs = {
+  data: [
+    {
+      id: 'log-1',
+      workflowId: 'wf-123',
+      executionId: 'exec-abc123',
+      level: 'info',
+      trigger: 'api',
+      startedAt: '2024-01-15T10:00:00.000Z',
+      endedAt: '2024-01-15T10:00:05.000Z',
+      totalDurationMs: 5000,
+    },
+  ],
+  nextCursor: 'cursor-1',
+  limits: { remaining: 42 },
+};
+
+export const mockExecutionLogDetail = {
+  data: {
+    id: 'log-1',
+    workflowId: 'wf-123',
+    executionId: 'exec-abc123',
+    level: 'info',
+    trigger: 'api',
+    startedAt: '2024-01-15T10:00:00.000Z',
+    endedAt: '2024-01-15T10:00:05.000Z',
+    totalDurationMs: 5000,
+    executionData: { finalOutput: { ok: true } },
+  },
+  limits: { remaining: 42 },
+};
+
+export const mockCancelExecutionResult = {
+  success: true,
+  executionId: 'exec-abc123',
+  redisAvailable: true,
 };
 
 /**
@@ -341,6 +392,9 @@ export function createMockSimApiClient(
     deployWorkflow: [],
     undeployWorkflow: [],
     executeWorkflow: [],
+    cancelExecution: [],
+    getLogs: [],
+    getLogDetail: [],
     // New operation-based methods
     workflowOperation: [],
     addBlocks: [],
@@ -404,12 +458,24 @@ export function createMockSimApiClient(
         deployedAt: null,
       };
     },
-    executeWorkflow: async (workflowId, input) => {
-      callHistory.executeWorkflow.push({ workflowId, input });
+    executeWorkflow: async (workflowId, options) => {
+      callHistory.executeWorkflow.push({ workflowId, input: options });
       if (workflowId === 'not-deployed') {
         throw new Error('Workflow is not deployed');
       }
       return mockExecutionResult;
+    },
+    cancelExecution: async (workflowId, executionId) => {
+      callHistory.cancelExecution.push({ workflowId, executionId });
+      return mockCancelExecutionResult;
+    },
+    getLogs: async (params) => {
+      callHistory.getLogs.push(params);
+      return mockExecutionLogs;
+    },
+    getLogDetail: async (logId) => {
+      callHistory.getLogDetail.push(logId);
+      return mockExecutionLogDetail;
     },
     // New operation-based methods
     workflowOperation: async (workflowId, operation, target, payload, options) => {
@@ -509,6 +575,9 @@ export function createMockSimApiClient(
     deployWorkflow: vi.fn(methods.deployWorkflow),
     undeployWorkflow: vi.fn(methods.undeployWorkflow),
     executeWorkflow: vi.fn(methods.executeWorkflow),
+    cancelExecution: vi.fn(methods.cancelExecution),
+    getLogs: vi.fn(methods.getLogs),
+    getLogDetail: vi.fn(methods.getLogDetail),
 
     // Operation-based methods
     workflowOperation: vi.fn(methods.workflowOperation),
@@ -569,8 +638,41 @@ export interface MockSimApiClientMethods {
   }>;
   executeWorkflow: (
     workflowId: string,
-    input?: Record<string, unknown>
+    input?: {
+      input?: Record<string, unknown>;
+      triggerType?: string;
+      useDraftState?: boolean;
+      stopAfterBlockId?: string;
+      runFromBlock?: {
+        startBlockId: string;
+        executionId?: string;
+      };
+    }
   ) => Promise<ExecutionResult>;
+  cancelExecution: (
+    workflowId: string,
+    executionId: string
+  ) => Promise<typeof mockCancelExecutionResult>;
+  getLogs: (params: {
+    workspaceId: string;
+    workflowId?: string;
+    executionId?: string;
+    level?: 'info' | 'error';
+    startDate?: string;
+    endDate?: string;
+    minDurationMs?: number;
+    maxDurationMs?: number;
+    minCost?: number;
+    maxCost?: number;
+    trigger?: string;
+    limit?: number;
+    cursor?: string;
+    order?: 'desc' | 'asc';
+    details?: 'basic' | 'full';
+    includeTraceSpans?: boolean;
+    includeFinalOutput?: boolean;
+  }) => Promise<typeof mockExecutionLogs>;
+  getLogDetail: (logId: string) => Promise<typeof mockExecutionLogDetail>;
   // Operation-based methods
   workflowOperation: (
     workflowId: string,
@@ -651,7 +753,40 @@ export interface MockCallHistory {
   getDeployedWorkflowState: string[];
   deployWorkflow: string[];
   undeployWorkflow: string[];
-  executeWorkflow: Array<{ workflowId: string; input?: Record<string, unknown> }>;
+  executeWorkflow: Array<{
+    workflowId: string;
+    input?: {
+      input?: Record<string, unknown>;
+      triggerType?: string;
+      useDraftState?: boolean;
+      stopAfterBlockId?: string;
+      runFromBlock?: {
+        startBlockId: string;
+        executionId?: string;
+      };
+    };
+  }>;
+  cancelExecution: Array<{ workflowId: string; executionId: string }>;
+  getLogs: Array<{
+    workspaceId: string;
+    workflowId?: string;
+    executionId?: string;
+    level?: 'info' | 'error';
+    startDate?: string;
+    endDate?: string;
+    minDurationMs?: number;
+    maxDurationMs?: number;
+    minCost?: number;
+    maxCost?: number;
+    trigger?: string;
+    limit?: number;
+    cursor?: string;
+    order?: 'desc' | 'asc';
+    details?: 'basic' | 'full';
+    includeTraceSpans?: boolean;
+    includeFinalOutput?: boolean;
+  }>;
+  getLogDetail: string[];
   // Operation-based methods
   workflowOperation: Array<{
     workflowId: string;

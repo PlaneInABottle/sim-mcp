@@ -17,55 +17,46 @@ import {
 import { type SimApiClient, createSimApiClient, formatMcpError } from './client/index.js';
 import { ConfigurationError, type SimMcpConfig, loadConfig } from './config/index.js';
 import {
-  // Block tools
   ADD_BLOCKS_DESCRIPTION,
   ADD_BLOCKS_TOOL_NAME,
-  // Edge tools
   ADD_EDGE_OP_DESCRIPTION,
   ADD_EDGE_OP_TOOL_NAME,
-  // Variable tools
   ADD_VARIABLE_DESCRIPTION,
   ADD_VARIABLE_TOOL_NAME,
-  // Create workflow tool
+  CANCEL_EXECUTION_DESCRIPTION,
+  CANCEL_EXECUTION_TOOL_NAME,
+  CREATE_SKILL_DESCRIPTION,
+  CREATE_SKILL_TOOL_NAME,
   CREATE_WORKFLOW_DESCRIPTION,
   CREATE_WORKFLOW_TOOL_NAME,
+  DELETE_SKILL_DESCRIPTION,
+  DELETE_SKILL_TOOL_NAME,
   DELETE_WORKFLOW_DESCRIPTION,
   DELETE_WORKFLOW_TOOL_NAME,
   DEPLOY_WORKFLOW_DESCRIPTION,
   DEPLOY_WORKFLOW_TOOL_NAME,
-  // Execute workflow tool
   EXECUTE_WORKFLOW_DESCRIPTION,
   EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
   GET_BLOCK_TOOL_NAME,
+  GET_CUSTOM_TOOL_DESCRIPTION,
+  GET_CUSTOM_TOOL_TOOL_NAME,
   GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
   GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
-  // Execution logs tools
   GET_EXECUTION_LOGS_DESCRIPTION,
   GET_EXECUTION_LOGS_TOOL_NAME,
   GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
   GET_EXECUTION_LOG_DETAIL_TOOL_NAME,
-  GET_WORKFLOW_DESCRIPTION,
-  GET_WORKFLOW_TOOL_NAME,
-  // Custom tools
-  GET_CUSTOM_TOOL_DESCRIPTION,
-  GET_CUSTOM_TOOL_TOOL_NAME,
-  LIST_CUSTOM_TOOLS_DESCRIPTION,
-  LIST_CUSTOM_TOOLS_TOOL_NAME,
-  // Skills tools
-  LIST_SKILLS_DESCRIPTION,
-  LIST_SKILLS_TOOL_NAME,
   GET_SKILL_DESCRIPTION,
   GET_SKILL_TOOL_NAME,
-  CREATE_SKILL_DESCRIPTION,
-  CREATE_SKILL_TOOL_NAME,
+  GET_WORKFLOW_DESCRIPTION,
   GET_WORKFLOW_STATUS_DESCRIPTION,
   GET_WORKFLOW_STATUS_TOOL_NAME,
-  UPDATE_SKILL_DESCRIPTION,
-  UPDATE_SKILL_TOOL_NAME,
-  DELETE_SKILL_DESCRIPTION,
-  DELETE_SKILL_TOOL_NAME,
-  // Workflow tools
+  GET_WORKFLOW_TOOL_NAME,
+  LIST_CUSTOM_TOOLS_DESCRIPTION,
+  LIST_CUSTOM_TOOLS_TOOL_NAME,
+  LIST_SKILLS_DESCRIPTION,
+  LIST_SKILLS_TOOL_NAME,
   LIST_WORKFLOWS_DESCRIPTION,
   LIST_WORKFLOWS_TOOL_NAME,
   REMOVE_BLOCKS_DESCRIPTION,
@@ -76,14 +67,22 @@ import {
   REMOVE_VARIABLE_TOOL_NAME,
   REPLACE_WORKFLOW_STATE_DESCRIPTION,
   REPLACE_WORKFLOW_STATE_TOOL_NAME,
-  UNDEPLOY_WORKFLOW_DESCRIPTION,
-  UNDEPLOY_WORKFLOW_TOOL_NAME,
+  RUN_BLOCK_DESCRIPTION,
+  RUN_BLOCK_TOOL_NAME,
+  RUN_FROM_BLOCK_DESCRIPTION,
+  RUN_FROM_BLOCK_TOOL_NAME,
+  RUN_WORKFLOW_UNTIL_BLOCK_DESCRIPTION,
+  RUN_WORKFLOW_UNTIL_BLOCK_TOOL_NAME,
   TOGGLE_BLOCK_ENABLED_DESCRIPTION,
   TOGGLE_BLOCK_ENABLED_TOOL_NAME,
+  UNDEPLOY_WORKFLOW_DESCRIPTION,
+  UNDEPLOY_WORKFLOW_TOOL_NAME,
   UPDATE_BLOCK_NAME_DESCRIPTION,
   UPDATE_BLOCK_NAME_TOOL_NAME,
   UPDATE_BLOCK_PARENT_DESCRIPTION,
   UPDATE_BLOCK_PARENT_TOOL_NAME,
+  UPDATE_SKILL_DESCRIPTION,
+  UPDATE_SKILL_TOOL_NAME,
   UPDATE_SUBBLOCK_DESCRIPTION,
   UPDATE_SUBBLOCK_TOOL_NAME,
   UPDATE_SUBFLOW_DESCRIPTION,
@@ -96,8 +95,14 @@ import {
   addEdgeOpInputSchema,
   addVariable,
   addVariableInputSchema,
+  cancelExecution,
+  cancelExecutionInputSchema,
+  createSkill,
+  createSkillInputSchema,
   createWorkflow,
   createWorkflowInputSchema,
+  deleteSkill,
+  deleteSkillInputSchema,
   deleteWorkflow,
   deleteWorkflowInputSchema,
   deployWorkflow,
@@ -110,16 +115,20 @@ import {
   getCustomToolInputSchema,
   getDeployedWorkflowState,
   getDeployedWorkflowStateInputSchema,
-  getExecutionLogs,
-  getExecutionLogsInputSchema,
   getExecutionLogDetail,
   getExecutionLogDetailInputSchema,
+  getExecutionLogs,
+  getExecutionLogsInputSchema,
+  getSkill,
+  getSkillInputSchema,
   getWorkflow,
   getWorkflowInputSchema,
   getWorkflowStatus,
   getWorkflowStatusInputSchema,
   listCustomTools,
   listCustomToolsInputSchema,
+  listSkills,
+  listSkillsInputSchema,
   listWorkflows,
   listWorkflowsInputSchema,
   removeBlocks,
@@ -130,6 +139,12 @@ import {
   removeVariableInputSchema,
   replaceWorkflowState,
   replaceWorkflowStateInputSchema,
+  runBlock,
+  runBlockInputSchema,
+  runFromBlock,
+  runFromBlockInputSchema,
+  runWorkflowUntilBlock,
+  runWorkflowUntilBlockInputSchema,
   toggleBlockEnabled,
   toggleBlockEnabledInputSchema,
   undeployWorkflow,
@@ -138,22 +153,14 @@ import {
   updateBlockNameInputSchema,
   updateBlockParent,
   updateBlockParentInputSchema,
+  updateSkill,
+  updateSkillInputSchema,
   updateSubblock,
   updateSubblockInputSchema,
   updateSubflow,
   updateSubflowInputSchema,
   upsertCustomTools,
   upsertCustomToolsInputSchema,
-  listSkills,
-  listSkillsInputSchema,
-  getSkill,
-  getSkillInputSchema,
-  createSkill,
-  createSkillInputSchema,
-  updateSkill,
-  updateSkillInputSchema,
-  deleteSkill,
-  deleteSkillInputSchema,
 } from './tools/index.js';
 import { getLogger, initializeLogger } from './utils/logger.js';
 
@@ -237,6 +244,26 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: EXECUTE_WORKFLOW_TOOL_NAME,
       description: EXECUTE_WORKFLOW_DESCRIPTION,
       inputSchema: executeWorkflowInputSchema,
+    },
+    {
+      name: RUN_WORKFLOW_UNTIL_BLOCK_TOOL_NAME,
+      description: RUN_WORKFLOW_UNTIL_BLOCK_DESCRIPTION,
+      inputSchema: runWorkflowUntilBlockInputSchema,
+    },
+    {
+      name: RUN_FROM_BLOCK_TOOL_NAME,
+      description: RUN_FROM_BLOCK_DESCRIPTION,
+      inputSchema: runFromBlockInputSchema,
+    },
+    {
+      name: RUN_BLOCK_TOOL_NAME,
+      description: RUN_BLOCK_DESCRIPTION,
+      inputSchema: runBlockInputSchema,
+    },
+    {
+      name: CANCEL_EXECUTION_TOOL_NAME,
+      description: CANCEL_EXECUTION_DESCRIPTION,
+      inputSchema: cancelExecutionInputSchema,
     },
     {
       name: CREATE_WORKFLOW_TOOL_NAME,
@@ -393,7 +420,7 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
   });
 
   const parseToolArguments = <T extends Record<string, unknown>>(args: unknown): T =>
-    ((args ?? {}) as T);
+    (args ?? {}) as T;
 
   // Handle tool calls
   server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
@@ -411,9 +438,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
 
         // Workflow tools
         case LIST_WORKFLOWS_TOOL_NAME: {
-          const input = parseToolArguments<{ workspaceId?: string; limit?: number; offset?: number }>(
-            args
-          );
+          const input = parseToolArguments<{
+            workspaceId?: string;
+            limit?: number;
+            offset?: number;
+          }>(args);
           const result = await listWorkflows(apiClient, input);
           return createResponse(result);
         }
@@ -440,6 +469,53 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             triggerType?: string;
           }>(args);
           const result = await executeWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case RUN_WORKFLOW_UNTIL_BLOCK_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            stopAfterBlockId: string;
+            input?: Record<string, unknown>;
+            triggerType?: string;
+            useDraftState?: boolean;
+          }>(args);
+          const result = await runWorkflowUntilBlock(apiClient, input);
+          return createResponse(result);
+        }
+
+        case RUN_FROM_BLOCK_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            startBlockId: string;
+            executionId?: string;
+            input?: Record<string, unknown>;
+            triggerType?: string;
+            useDraftState?: boolean;
+          }>(args);
+          const result = await runFromBlock(apiClient, input);
+          return createResponse(result);
+        }
+
+        case RUN_BLOCK_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            blockId: string;
+            executionId?: string;
+            input?: Record<string, unknown>;
+            triggerType?: string;
+            useDraftState?: boolean;
+          }>(args);
+          const result = await runBlock(apiClient, input);
+          return createResponse(result);
+        }
+
+        case CANCEL_EXECUTION_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            executionId: string;
+          }>(args);
+          const result = await cancelExecution(apiClient, input);
           return createResponse(result);
         }
 

@@ -6,9 +6,9 @@
  * - get_execution_log_detail: Get full detail for a specific log via GET /api/v1/logs/{id}
  */
 
-import type { SimApiClient } from '../../client/index.js';
+import { NotFoundError, type SimApiClient, ValidationError } from '../../client/index.js';
 import { getLogger } from '../../utils/logger.js';
-import { validateRequiredParams } from './shared.js';
+import { isSimApiErrorWithStatus, mapAuthModeError, validateRequiredParams } from './shared.js';
 
 // ==========================================
 // get_execution_logs
@@ -105,8 +105,7 @@ export const getExecutionLogsInputSchema = {
     },
     includeFinalOutput: {
       type: 'boolean',
-      description:
-        'Include the final output of the workflow execution (requires details=full).',
+      description: 'Include the final output of the workflow execution (requires details=full).',
     },
   },
   required: ['workspaceId'],
@@ -139,6 +138,7 @@ export interface GetExecutionLogsInput {
  * Output type for get_execution_logs
  */
 export interface GetExecutionLogsOutput {
+  count: number;
   data: Array<Record<string, unknown>>;
   nextCursor?: string;
   limits?: Record<string, unknown>;
@@ -159,6 +159,7 @@ export async function getExecutionLogs(
 
   try {
     validateRequiredParams({ workspaceId: input.workspaceId }, GET_EXECUTION_LOGS_TOOL_NAME);
+    validateLogFilters(input);
 
     logger.debug('Fetching execution logs', {
       operation: 'get_execution_logs',
@@ -169,22 +170,28 @@ export async function getExecutionLogs(
     });
 
     const result = await client.getLogs(input);
+    const logs = Array.isArray(result.data) ? result.data : [];
 
     logger.debug('Execution logs fetched', {
       operation: 'get_execution_logs',
       workspaceId: input.workspaceId,
-      count: result.data?.length ?? 0,
+      count: logs.length,
       hasMore: !!result.nextCursor,
     });
 
-    return result;
+    return {
+      count: logs.length,
+      data: logs,
+      nextCursor: result.nextCursor,
+      limits: result.limits,
+    };
   } catch (error) {
     logger.error('Failed to fetch execution logs', {
       operation: 'get_execution_logs',
       workspaceId: input.workspaceId,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
-    throw error;
+    throw mapLogToolError(error, 'list', input.workspaceId);
   }
 }
 
@@ -229,8 +236,21 @@ export interface GetExecutionLogDetailInput {
  * Output type for get_execution_log_detail
  */
 export interface GetExecutionLogDetailOutput {
+  summary: Record<string, unknown>;
   data: Record<string, unknown>;
   limits?: Record<string, unknown>;
+}
+
+function validateLogFilters(input: GetExecutionLogsInput): void {
+  if ((input.includeTraceSpans || input.includeFinalOutput) && input.details !== 'full') {
+    throw new ValidationError(
+      'includeTraceSpans and includeFinalOutput require details="full" for get_execution_logs',
+      {
+        tool: GET_EXECUTION_LOGS_TOOL_NAME,
+        details: input.details ?? 'basic',
+      }
+    );
+  }
 }
 
 /**
@@ -255,6 +275,17 @@ export async function getExecutionLogDetail(
     });
 
     const result = await client.getLogDetail(input.logId);
+    const data = result.data ?? {};
+    const summary = {
+      id: data.id,
+      workflowId: data.workflowId,
+      executionId: data.executionId,
+      level: data.level,
+      trigger: data.trigger,
+      startedAt: data.startedAt,
+      endedAt: data.endedAt,
+      totalDurationMs: data.totalDurationMs,
+    };
 
     logger.debug('Execution log detail fetched', {
       operation: 'get_execution_log_detail',
@@ -262,13 +293,43 @@ export async function getExecutionLogDetail(
       hasData: !!result.data,
     });
 
-    return result;
+    return {
+      summary,
+      data,
+      limits: result.limits,
+    };
   } catch (error) {
     logger.error('Failed to fetch execution log detail', {
       operation: 'get_execution_log_detail',
       logId: input.logId,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
-    throw error;
+    throw mapLogToolError(error, 'detail', undefined, input.logId);
   }
+}
+
+function mapLogToolError(
+  error: unknown,
+  mode: 'list' | 'detail',
+  workspaceId?: string,
+  logId?: string
+): unknown {
+  const mappedError = mapAuthModeError(
+    error,
+    mode === 'list' ? GET_EXECUTION_LOGS_TOOL_NAME : GET_EXECUTION_LOG_DETAIL_TOOL_NAME
+  );
+
+  if (isSimApiErrorWithStatus(mappedError, 404) && logId) {
+    return new NotFoundError('Execution log', logId);
+  }
+
+  if (isSimApiErrorWithStatus(mappedError, 400) && workspaceId) {
+    const message = mappedError instanceof Error ? mappedError.message : 'Invalid log request';
+    return new ValidationError(message, {
+      tool: GET_EXECUTION_LOGS_TOOL_NAME,
+      workspaceId,
+    });
+  }
+
+  return mappedError;
 }

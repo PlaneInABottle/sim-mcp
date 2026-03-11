@@ -6,20 +6,30 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { NotFoundError, ValidationError } from '../../../src/client/index.js';
 import type { Block } from '../../../src/schemas/workflow.js';
 import {
+  cancelExecution,
   deleteWorkflow,
   deployWorkflow,
   getDeployedWorkflowState,
+  getExecutionLogDetail,
+  getExecutionLogs,
   getWorkflow,
   getWorkflowStatus,
   listWorkflows,
   replaceWorkflowState,
+  runBlock,
+  runFromBlock,
+  runWorkflowUntilBlock,
   undeployWorkflow,
 } from '../../../src/tools/workflow/index.js';
 import {
   createMockSimApiClient,
+  mockCancelExecutionResult,
   mockDeployedWorkflow,
+  mockExecutionLogDetail,
+  mockExecutionLogs,
   mockWorkflow,
   mockWorkflowDeleteCheckResult,
 } from '../../mocks/sim-api.js';
@@ -221,6 +231,150 @@ describe('Workflow Tools', () => {
     });
   });
 
+  describe('execution controls', () => {
+    it('should run workflow until a block', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await runWorkflowUntilBlock(mockClient, {
+        workflowId: 'wf-123',
+        stopAfterBlockId: 'block-2',
+        input: { message: 'hello' },
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        executionId: 'exec-abc123',
+        stopAfterBlockId: 'block-2',
+      });
+      expect(mockClient.executeWorkflow).toHaveBeenCalledWith('wf-123', {
+        input: { message: 'hello' },
+        triggerType: undefined,
+        useDraftState: true,
+        stopAfterBlockId: 'block-2',
+      });
+    });
+
+    it('should run from a block using latest snapshot by default', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await runFromBlock(mockClient, {
+        workflowId: 'wf-123',
+        startBlockId: 'block-2',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        executionId: 'exec-abc123',
+        startBlockId: 'block-2',
+      });
+      expect(mockClient.executeWorkflow).toHaveBeenCalledWith('wf-123', {
+        input: undefined,
+        triggerType: undefined,
+        useDraftState: true,
+        runFromBlock: {
+          startBlockId: 'block-2',
+          executionId: 'latest',
+        },
+      });
+    });
+
+    it('should run a single block using thin wrapper controls', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await runBlock(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-2',
+        executionId: 'exec-prev',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        executionId: 'exec-abc123',
+        blockId: 'block-2',
+      });
+      expect(mockClient.executeWorkflow).toHaveBeenCalledWith('wf-123', {
+        input: undefined,
+        triggerType: undefined,
+        useDraftState: true,
+        stopAfterBlockId: 'block-2',
+        runFromBlock: {
+          startBlockId: 'block-2',
+          executionId: 'exec-prev',
+        },
+      });
+    });
+
+    it('should surface missing snapshot failures clearly', async () => {
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => {
+          throw new ValidationError(
+            'No execution state found for workflow wf-123. Run the full workflow first.'
+          );
+        },
+      });
+
+      await expect(
+        runFromBlock(mockClient, {
+          workflowId: 'wf-123',
+          startBlockId: 'block-2',
+        })
+      ).rejects.toThrow('Run the full workflow first');
+    });
+
+    it('should require execution control IDs', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        runBlock(mockClient, {
+          workflowId: 'wf-123',
+          blockId: '',
+        })
+      ).rejects.toThrow("Missing required parameter 'blockId'");
+    });
+
+    it('should map missing executions during cancellation', async () => {
+      const mockClient = createMockSimApiClient({
+        cancelExecution: async () => {
+          throw new NotFoundError('Execution', 'exec-missing');
+        },
+      });
+
+      await expect(
+        cancelExecution(mockClient, {
+          workflowId: 'wf-123',
+          executionId: 'exec-missing',
+        })
+      ).rejects.toThrow('Execution not found: exec-missing');
+    });
+
+    it('should not misclassify workflow 404s as execution 404s when executionId is present', async () => {
+      const mockClient = createMockSimApiClient({
+        cancelExecution: async () => {
+          throw new NotFoundError('Workflow', 'wf-missing');
+        },
+      });
+
+      await expect(
+        cancelExecution(mockClient, {
+          workflowId: 'wf-missing',
+          executionId: 'exec-abc123',
+        })
+      ).rejects.toThrow('Workflow not found: wf-missing');
+    });
+
+    it('should cancel execution successfully', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await cancelExecution(mockClient, {
+        workflowId: 'wf-123',
+        executionId: 'exec-abc123',
+      });
+
+      expect(result).toEqual(mockCancelExecutionResult);
+      expect(mockClient.cancelExecution).toHaveBeenCalledWith('wf-123', 'exec-abc123');
+    });
+  });
+
   describe('undeployWorkflow', () => {
     it('should return concise undeploy details', async () => {
       const mockClient = createMockSimApiClient();
@@ -230,6 +384,66 @@ describe('Workflow Tools', () => {
       expect(result.isDeployed).toBe(false);
       expect(result.apiKey).toBeNull();
       expect(mockClient.undeployWorkflow).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('execution logs', () => {
+    it('should return summary-first execution logs output', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getExecutionLogs(mockClient, {
+        workspaceId: 'ws-789',
+      });
+
+      expect(result).toEqual({
+        count: 1,
+        data: mockExecutionLogs.data,
+        nextCursor: mockExecutionLogs.nextCursor,
+        limits: mockExecutionLogs.limits,
+      });
+      expect(mockClient.getLogs).toHaveBeenCalledWith({ workspaceId: 'ws-789' });
+    });
+
+    it('should reject trace span flags without full details', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        getExecutionLogs(mockClient, {
+          workspaceId: 'ws-789',
+          includeTraceSpans: true,
+        })
+      ).rejects.toThrow('require details="full"');
+    });
+
+    it('should return log detail with lightweight summary', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getExecutionLogDetail(mockClient, { logId: 'log-1' });
+
+      expect(result.summary).toEqual({
+        id: 'log-1',
+        workflowId: 'wf-123',
+        executionId: 'exec-abc123',
+        level: 'info',
+        trigger: 'api',
+        startedAt: '2024-01-15T10:00:00.000Z',
+        endedAt: '2024-01-15T10:00:05.000Z',
+        totalDurationMs: 5000,
+      });
+      expect(result.data).toEqual(mockExecutionLogDetail.data);
+      expect(result.limits).toEqual(mockExecutionLogDetail.limits);
+    });
+
+    it('should map missing log detail to descriptive not found error', async () => {
+      const mockClient = createMockSimApiClient({
+        getLogDetail: async () => {
+          throw new NotFoundError('Resource', 'log-missing');
+        },
+      });
+
+      await expect(getExecutionLogDetail(mockClient, { logId: 'log-missing' })).rejects.toThrow(
+        'Execution log not found: log-missing'
+      );
     });
   });
 

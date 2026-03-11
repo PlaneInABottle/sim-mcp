@@ -92,6 +92,32 @@ export {
 } from './execute.js';
 export type { ExecuteWorkflowInput, ExecuteWorkflowOutput } from './execute.js';
 
+export {
+  CANCEL_EXECUTION_DESCRIPTION,
+  CANCEL_EXECUTION_TOOL_NAME,
+  cancelExecution,
+  cancelExecutionInputSchema,
+  RUN_BLOCK_DESCRIPTION,
+  RUN_BLOCK_TOOL_NAME,
+  runBlock,
+  runBlockInputSchema,
+  RUN_FROM_BLOCK_DESCRIPTION,
+  RUN_FROM_BLOCK_TOOL_NAME,
+  runFromBlock,
+  runFromBlockInputSchema,
+  RUN_WORKFLOW_UNTIL_BLOCK_DESCRIPTION,
+  RUN_WORKFLOW_UNTIL_BLOCK_TOOL_NAME,
+  runWorkflowUntilBlock,
+  runWorkflowUntilBlockInputSchema,
+} from './execution-controls.js';
+export type {
+  CancelExecutionInput,
+  CancelExecutionOutput,
+  RunBlockInput,
+  RunFromBlockInput,
+  RunWorkflowUntilBlockInput,
+} from './execution-controls.js';
+
 // Execution logs tools
 export {
   GET_EXECUTION_LOGS_DESCRIPTION,
