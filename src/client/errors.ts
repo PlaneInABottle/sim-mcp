@@ -29,6 +29,9 @@ export enum SimErrorCode {
   INVALID_INPUT = 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
 
+  // Conflict errors (409)
+  CONFLICT_ERROR = 'CONFLICT_ERROR',
+
   // Rate limiting (429)
   RATE_LIMIT_ERROR = 'RATE_LIMIT_ERROR',
 
@@ -147,6 +150,16 @@ export class ValidationError extends SimApiError {
 }
 
 /**
+ * Conflict error - Request conflicts with existing state
+ */
+export class ConflictError extends SimApiError {
+  constructor(message = 'Request conflicts with existing state', details?: ErrorDetails) {
+    super(message, 409, SimErrorCode.CONFLICT_ERROR, details, false);
+    this.name = 'ConflictError';
+  }
+}
+
+/**
  * Rate limit error - Too many requests
  */
 export class RateLimitError extends SimApiError {
@@ -225,6 +238,8 @@ export function mapHttpError(
   switch (statusCode) {
     case 400:
       return new ValidationError(message ?? 'Invalid request', details);
+    case 409:
+      return new ConflictError(message, details);
     case 401:
       return new AuthenticationError(message);
     case 403:

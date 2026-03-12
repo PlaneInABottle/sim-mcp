@@ -24,6 +24,7 @@ export type { AuthConfig } from './auth.js';
 export {
   AuthenticationError,
   AuthorizationError,
+  ConflictError,
   formatMcpError,
   InternalError,
   isRetryableError,

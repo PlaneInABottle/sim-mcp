@@ -5,7 +5,7 @@
  * Uses the batch-add-blocks operation for efficiency.
  */
 
-import type { SimApiClient } from '../../client/index.js';
+import { ConflictError, SimApiError, ValidationError, type SimApiClient } from '../../client/index.js';
 import type { OperationResponse } from '../../client/types.js';
 import { addBlocksJsonSchema } from '../../schemas/operations.js';
 import { checkBroadcastFailure } from '../../utils/broadcast-warning.js';
@@ -65,6 +65,28 @@ function generateBlockId(): string {
   return `block-${crypto.randomUUID()}`;
 }
 
+function findDuplicateExplicitBlockIds(
+  blocks: AddBlocksInput['blocks']
+): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+
+  for (const block of blocks) {
+    if (!block.id) {
+      continue;
+    }
+
+    if (seen.has(block.id)) {
+      duplicates.add(block.id);
+      continue;
+    }
+
+    seen.add(block.id);
+  }
+
+  return [...duplicates];
+}
+
 /**
  * Add blocks to a workflow
  *
@@ -83,6 +105,19 @@ export async function addBlocks(
       { workflowId: input.workflowId, blocks: input.blocks },
       ADD_BLOCKS_TOOL_NAME
     );
+
+    const duplicateExplicitIds = findDuplicateExplicitBlockIds(input.blocks);
+    if (duplicateExplicitIds.length > 0) {
+      throw new ValidationError(
+        `add_blocks received duplicate explicit block IDs in the same request: ${duplicateExplicitIds.join(', ')}`,
+        {
+          tool: ADD_BLOCKS_TOOL_NAME,
+          workflowId: input.workflowId,
+          duplicateBlockIds: duplicateExplicitIds,
+          category: 'duplicate_block_ids',
+        }
+      );
+    }
 
     logger.debug('Adding blocks to workflow', {
       operation: 'add_blocks',
@@ -124,12 +159,26 @@ export async function addBlocks(
       ...(warning && { warning }),
     };
   } catch (error) {
+    const mappedError =
+      error instanceof SimApiError && error.statusCode === 409
+        ? new ConflictError(
+            'add_blocks could not add one or more blocks because an explicit block ID conflicts with an existing block ID. Remove the explicit IDs or provide unique IDs.',
+            {
+              tool: ADD_BLOCKS_TOOL_NAME,
+              workflowId: input.workflowId,
+              category: 'duplicate_block_id_conflict',
+              backendMessage: error.message,
+              ...(error.details ? { backendDetails: error.details } : {}),
+            }
+          )
+        : error;
+
     logger.error('Failed to add blocks', {
       operation: 'add_blocks',
       workflowId: input.workflowId,
       blockCount: input.blocks.length,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: mappedError instanceof Error ? mappedError.message : 'Unknown error',
     });
-    throw error;
+    throw mappedError;
   }
 }
