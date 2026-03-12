@@ -1,192 +1,145 @@
 # AGENTS.md
 
-## 1. Project Purpose & Scope
-This repository is a TypeScript MCP (Model Context Protocol) **stdio server** that exposes sim workflow operations to AI clients (e.g., Copilot/Claude). The server runs over stdio, registers MCP tools, and forwards tool calls to the sim backend API.
+## Purpose
 
-## 2. Architecture & Key Entrypoints
-- **Entrypoints**
-  - `src/index.ts`: CLI entry (`sim-mcp --server`) and usage/help.
-  - `src/server.ts`: MCP server setup, tool registration, stdio transport.
-- **Core Structure**
-  - `src/client/`: Sim API client (axios), auth, error mapping.
-  - `src/tools/`: MCP tool handlers grouped by domain.
-  - `src/schemas/`: Zod schemas for operations and validation.
-  - `src/config/`: Environment loading/validation (`zod`).
-  - `src/utils/`: Logging utilities (stderr JSON logs).
-- **MCP Protocol Flow (stdio)**
-  1. `Server` is created with tools capability.
-  2. `ListToolsRequestSchema` returns tool metadata.
-  3. `CallToolRequestSchema` executes tool handlers.
-  4. Responses are JSON-stringified into MCP `content` text; errors use `formatMcpError()` with `isError: true`.
+`sim-mcp` is a TypeScript MCP stdio server that exposes Sim workflow operations to MCP clients. The server registers a fixed tool surface in `src/server.ts`, validates environment config, forwards requests to the Sim backend API, and returns JSON-stringified results in MCP text content.
 
-## 3. Environment Setup & Configuration
+## Authoritative sources
 
-⚠️ **IMPORTANT: Different contexts use different env files and variable names!**
+When this file and code disagree, trust code in this order:
 
-### Server Runtime (`.env` / `.env.example`)
-Used by the MCP server when running in production or local development:
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SIM_API_BASE_URL` | ✅ Yes | Base URL for Sim API (e.g., `https://api.sim.com`) |
-| `SIM_API_KEY` | ✅ Yes | API key for authentication |
-| `SIM_TIMEOUT` | No | Request timeout in ms (default: 30000) |
-| `SIM_RETRIES` | No | Retry count (default: 3) |
-| `LOG_LEVEL` | No | `debug\|info\|warn\|error` (default: `info`) |
+1. `src/server.ts` — actual MCP tool registration and dispatch
+2. `src/tools/**/index.ts` — grouped tool exports
+3. individual tool modules in `src/tools/**`
 
-Setup: Copy `.env.example` → `.env` and fill in values.
+## Entrypoints and structure
 
-### Local E2E Tests (`.env.local` / `scripts/local-e2e.ts`)
-Used **only** for running integration tests locally:
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SIM_BASE_URL` | ✅ Yes | ⚠️ **NOT** `SIM_API_BASE_URL` — e2e script uses this name |
-| `SIM_API_KEY` | ✅ Yes | API key for authentication |
-| `TEST_WORKFLOW_ID` | ✅ Yes | Workflow ID to run tests against |
+- `src/index.ts` — CLI entrypoint (`sim-mcp --server`)
+- `src/server.ts` — MCP server creation, tool registration, request handling
+- `src/client/` — authenticated Sim API client and error mapping
+- `src/tools/` — domain-grouped MCP tools
+- `src/config/` — env parsing/validation
+- `src/utils/` — structured stderr logging
 
-Setup: Create `.env.local` (gitignored) with these values.
+## Runtime configuration
 
-**Common Mistake:** Using `SIM_API_BASE_URL` in `.env.local` — the e2e script expects `SIM_BASE_URL`.
+The server currently requires backend API credentials at startup.
 
-## 4. Tool Taxonomy & Constraints
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `SIM_API_BASE_URL` | yes | Base URL for the Sim backend |
+| `SIM_API_KEY` | yes | API key used by the HTTP client |
+| `SIM_TIMEOUT` | no | Request timeout in ms, default `30000` |
+| `SIM_RETRIES` | no | Retry count, default `3` |
+| `LOG_LEVEL` | no | `debug`, `info`, `warn`, or `error` |
 
-### Auth Context
-| Auth Type | Tools |
-|-----------|-------|
-| **No Auth** (local operation) | `list_tools` |
-| **Session Auth** (not API key) | `list_workflows`, `get_workflow` |
-| **API Key Auth** | All mutation tools: `replace_workflow_state`, blocks, edges, variables, subflows, custom tools |
+`src/config/env.ts` is the source of truth for validation and defaults.
 
-### Tool Reference
+## MCP behavior
 
-**Meta**
-- `list_tools`: List all available sim-mcp tools with their schemas and descriptions.
+- Transport: stdio
+- Listing tools: `ListToolsRequestSchema`
+- Calling tools: `CallToolRequestSchema`
+- Successful results: JSON serialized into MCP `content[].text`
+- Errors: normalized with `formatMcpError(...)` and returned with `isError: true`
+- Logs: structured JSON to stderr so stdout stays MCP-safe
 
-**Workflows (Query)** *(session auth)*
-- `list_workflows`: list workflows (metadata only).
-- `get_workflow`: fetch workflow with blocks/edges; `verbose=true` returns full block config and can be large.
+## Current tool surface
 
-**Workflows (Mutation)** *(API key auth)*
-- `replace_workflow_state`: overwrite entire workflow state (destructive).
+### Meta
 
-**Blocks** *(API key auth)*
-- `get_block`: retrieve a single block (full config).
-- `add_blocks`: add blocks (optionally edges); use for creating loop/parallel blocks.
-- `remove_blocks`: remove blocks **and connected edges/subflows**.
-- `update_block_name`: rename block.
-- `toggle_block_enabled`: enable/disable.
-- `update_subblock`: update a block’s subblock (e.g., agent messages).
+- `list_tools` — confirm the server is running and list registered tool names/descriptions
 
-> 💡 **Tip:** Use `get_workflow(verbose=false)` first to see all blocks and connections, then use `get_block` for detailed config of specific blocks.
+### Workflow discovery and lifecycle
 
-**Edges** *(API key auth)*
-- `add_edge`: connect blocks.
-- `remove_edge`: disconnect by edgeId.
+- `list_workflows` — list accessible workflows
+- `get_workflow` — fetch one workflow; use `verbose=true` only when full block config is required
+- `create_workflow` — create a new workflow
+- `delete_workflow` — delete a workflow, with template-check handling options
+- `replace_workflow_state` — replace the entire draft workflow state
+- `get_workflow_status` — inspect deployment/draft status
+- `get_deployed_workflow_state` — fetch the currently deployed state
+- `deploy_workflow` — deploy the current draft
+- `undeploy_workflow` — remove the active deployment
 
-**Variables** *(API key auth)*
-- `add_variable`: add workflow variable.
-- `remove_variable`: delete variable (references become undefined).
+### Deployment version management
 
-**Subflows** *(API key auth)*
-- `update_subflow`: **only updates existing** loop/parallel subflow configs.
-  - Subflows are created via `add_blocks` with `type: "loop" | "parallel"`.
-  - Subflows are removed via `remove_blocks`.
-  - Treat subflow updates as *configuration-only* from the agent perspective.
+- `list_deployment_versions` — list saved deployment versions
+- `get_deployment_version` — inspect one deployment version; can optionally include full state
+- `activate_deployment_version` — make a prior deployment version active
+- `revert_workflow_to_deployment_version` — restore a deployment version back into draft state
 
-**Custom Tools** *(API key auth)*
-- `list_custom_tools`: list tools in a workspace.
-- `upsert_custom_tools`: create/update tools in a workspace.
+### Workflow execution and debug control
 
-## 5. Backend Integration (Source of Truth)
-- Sim backend schemas are authoritative; align tool inputs with backend Zod schemas and operation names.
-- Reference backend locations (from `TESTING.md`):
-  - `sim/apps/sim/socket/validation/schemas.ts`
-  - `sim/apps/sim/socket/constants.ts`
-  - `sim/apps/sim/socket/database/operations.ts`
-- **Verify compatibility** by running local integration tests (`scripts/local-e2e.ts`) against a real backend.
+- `execute_workflow` — execute a workflow from its trigger entrypoint
+- `run_workflow_until_block` — run until a specific block completes
+- `run_from_block` — resume from a specific block using a prior execution snapshot
+- `run_block` — run a single block in isolation
+- `cancel_execution` — cancel an active execution
 
-## 6. Testing Strategy
-- **Unit tests**: `npm test` (Vitest, mocked client).
-- **Local integration (recommended for changes to tools)**:
-  ```bash
-  # .env.local (gitignored)
-  SIM_API_KEY=sk-...
-  SIM_BASE_URL=http://localhost:3000
-  TEST_WORKFLOW_ID=...
+### Execution logs
 
-  npx tsx scripts/local-e2e.ts
-  ```
-- Note: Workflow CRUD endpoints require session auth; operation endpoints support API key auth.
+- `get_execution_logs` — list/filter execution logs for a workspace
+- `get_execution_log_detail` — fetch full detail for one execution log
 
-## 7. Error Handling & Logging Conventions
-- Tool handlers wrap operations in try/catch and log with `getLogger()`.
-- API errors are mapped to structured `SimApiError` types (e.g., `RateLimitError`, `ValidationError`).
-- MCP error responses use `formatMcpError(error)` and set `isError: true`.
-- Logs are JSON written to **stderr** to keep MCP stdout clean.
+### Workflow graph editing
 
-## 8. Safety & Operational Limits
+#### Blocks
 
-**For AI Agents — Follow these rules:**
+- `get_block` — get one block with full config/subblocks
+- `add_blocks` — add one or more blocks
+- `remove_blocks` — remove blocks and their connected edges/subflows
+- `update_block_name` — rename a block
+- `toggle_block_enabled` — enable or disable a block
+- `update_block_parent` — set or clear a block parent for nesting
+- `update_subblock` — update a block subblock value
 
-1. **Prompt user for confirmation before destructive operations:**
-   - `replace_workflow_state` — overwrites entire workflow
-   - `remove_blocks` — deletes blocks AND connected edges/subflows
-   - `remove_edge` — disconnects blocks
-   - `remove_variable` — references become undefined
+#### Edges
 
-2. **List before mutate:** Always call `get_workflow` or `get_block` to verify current state before making changes. Never assume state.
+- `add_edge` — connect two blocks
+- `remove_edge` — remove one edge by id
 
-3. **Minimize payload size:**
-   - Avoid `get_workflow(verbose=true)` for large workflows
-   - Use `get_block` for targeted config inspection
+#### Variables
 
-4. **Respect rate limits:** Handle 429 responses gracefully; use default retry behavior unless directed otherwise.
+- `add_variable` — create a workflow variable
+- `remove_variable` — remove a workflow variable
 
-**Example Error Response Format:**
-```json
-{
-  "isError": true,
-  "content": [{ "type": "text", "text": "{\"error\": \"ValidationError\", \"message\": \"Block not found\"}" }]
-}
-```
+#### Subflows
 
-## 9. Common Patterns (Real Code Examples)
-**Add blocks and connect them** (`scripts/local-e2e.ts`):
-```ts
-await addBlocks(client, {
-  workflowId,
-  blocks: [
-    { id: newBlockId, type: 'agent', name: 'E2E Agent', position: { x: 100, y: 100 } },
-    { id: secondBlockId, type: 'agent', name: 'E2E Agent 2', position: { x: 300, y: 100 } },
-  ],
-});
-await addEdgeOp(client, { workflowId, source: newBlockId, target: secondBlockId, edgeId });
-```
+- `update_subflow` — update an existing `loop` or `parallel` container configuration
 
-**Update a subblock (agent messages)** (`scripts/local-e2e.ts`):
-```ts
-await updateSubblock(client, {
-  workflowId,
-  blockId: newBlockId,
-  subblockId: 'messages',
-  value: [{ role: 'user', content: 'test message' }],
-});
-```
+## Workspace-level assets
 
-**Update a loop subflow configuration** (`scripts/local-e2e.ts`):
-```ts
-await addBlocks(client, {
-  workflowId,
-  blocks: [{ id: loopBlockId, type: 'loop', name: 'E2E Loop', position: { x: 200, y: 200 } }],
-});
-await updateSubflow(client, { workflowId, id: loopBlockId, type: 'loop', config: { iterations: 10 } });
-```
+### Custom tools
 
-**Get a workflow safely (lightweight)** (`src/tools/workflow/get.ts`):
-```ts
-const workflow = await client.getWorkflow(workflowId);
-const result = verbose ? workflow : stripWorkflowDetails(workflow);
-```
+- `list_custom_tools` — list lightweight custom tool metadata
+- `get_custom_tool` — fetch one custom tool including schema and code
+- `upsert_custom_tools` — create or update custom tools in batch
 
-## 10. Last Verified
-- **Date:** 2026-01-16
-- **Context:** Verified against `src/server.ts`, `src/config/env.ts`, `src/tools/*`, and `scripts/local-e2e.ts` in this repo.
+### Skills
+
+- `list_skills` — list lightweight skill metadata
+- `get_skill` — fetch one skill including full content
+- `create_skill` — create a new skill
+- `update_skill` — update an existing skill
+- `delete_skill` — delete a skill
+
+## Usage guidance
+
+- Prefer lightweight reads first:
+  - `get_workflow(verbose=false)` before `verbose=true`
+  - `get_block` for targeted inspection instead of pulling a full verbose workflow
+  - `list_custom_tools` / `list_skills` before `get_*`
+- Treat `replace_workflow_state`, `remove_blocks`, `remove_edge`, `remove_variable`, `delete_workflow`, and deployment version activation/revert operations as potentially destructive.
+- `update_subflow` only updates existing loop/parallel containers; creation/removal is handled through block operations.
+- This repo’s authoritative surface is the registered MCP tools above; do not rely on older deleted docs or narrower historical tool lists.
+
+## Validation rule for future edits
+
+For documentation updates, validate against:
+
+- `src/server.ts` tool registration list
+- `src/tools/index.ts`
+- each domain export index under `src/tools/`
+
+This file was last aligned to the tool surface registered in `src/server.ts`.

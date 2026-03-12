@@ -13,31 +13,22 @@ import { startServer } from './server.js';
  */
 function showUsage(): void {
   console.log(`
-sim-mcp - MCP server for sim AI workflow platform
+sim-mcp - MCP stdio server for Sim
 
 USAGE:
-  sim-mcp [OPTIONS]
+  sim-mcp --server
+  sim-mcp --help
+  sim-mcp --version
 
 OPTIONS:
   --server, -s    Start MCP server on stdio
   --help, -h      Show this help message
   --version, -v   Show version information
 
-ENVIRONMENT VARIABLES:
-  SIM_API_BASE_URL    Base URL of the sim backend API (required)
-  SIM_API_KEY         API key for authentication (required)
-  SIM_TIMEOUT         Request timeout in milliseconds (default: 30000)
-  SIM_RETRIES         Number of retry attempts (default: 3)
-  LOG_LEVEL           Logging level: debug, info, warn, error (default: info)
-
-EXAMPLES:
-  # Start MCP server
-  sim-mcp --server
-
-  # Or using npm script
-  npm run start
-
-For more information, see: https://github.com/your-org/sim-mcp
+SETUP:
+  Provide SIM_API_BASE_URL and SIM_API_KEY from your shell or MCP client config.
+  See README.md for quick start and .env.example for reference values.
+  See AGENTS.md for operational guidance.
 `);
 }
 
