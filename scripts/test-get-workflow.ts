@@ -30,17 +30,16 @@ function loadEnvLocal(): void {
 async function main(): Promise<void> {
   loadEnvLocal();
 
-  const baseUrl =
-    process.env.SIM_API_BASE_URL || process.env.SIM_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.SIM_API_BASE_URL || 'http://localhost:3000';
   const apiKey = process.env.SIM_API_KEY;
   const workflowId = process.env.TEST_WORKFLOW_ID;
 
   if (!apiKey) {
-    throw new Error('Missing SIM_API_KEY in environment or .env.local');
+    throw new Error('Missing SIM_API_KEY');
   }
 
   if (!workflowId) {
-    throw new Error('Missing TEST_WORKFLOW_ID in environment or .env.local');
+    throw new Error('Missing TEST_WORKFLOW_ID');
   }
 
   const client = createSimApiClient({ baseUrl, apiKey });

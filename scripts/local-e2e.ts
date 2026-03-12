@@ -1,14 +1,3 @@
-/*
- * Local E2E smoke test for sim-mcp against a running sim app.
- *
- * Usage:
- *   1) Create sim-mcp/.env.local with:
- *        SIM_API_KEY=sk-...
- *        SIM_BASE_URL=http://localhost:3000
- *   2) Run:
- *        cd sim-mcp && npx tsx scripts/local-e2e.ts
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -49,7 +38,6 @@ function loadEnvLocal(): void {
 }
 
 function safe(obj: unknown): unknown {
-  // Avoid accidentally printing secrets
   if (typeof obj === 'string' && obj.startsWith('sk-')) return '[REDACTED]';
   return obj;
 }
@@ -57,31 +45,18 @@ function safe(obj: unknown): unknown {
 async function main() {
   loadEnvLocal();
 
-  const baseUrl = process.env.SIM_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.SIM_API_BASE_URL || 'http://localhost:3000';
   const apiKey = process.env.SIM_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      'Missing SIM_API_KEY. Create sim-mcp/.env.local (gitignored) with SIM_API_KEY=...'
-    );
+    throw new Error('Missing SIM_API_KEY');
   }
 
   const client = createSimApiClient({ baseUrl, apiKey });
-
-  // NOTE: /api/workflows CRUD endpoints require session auth (cookies), not API keys.
-  // Only /api/workflows/[id]/operations supports x-api-key.
-  // For this test, we'll use a hardcoded workflow ID that you need to provide.
-
-  const tempWorkflowId = process.env.TEST_WORKFLOW_ID || 'default-agent';
-  if (!tempWorkflowId || tempWorkflowId === 'default-agent') {
-    console.error('\n⚠️  Set TEST_WORKFLOW_ID=<your-workflow-id> in .env.local');
-    console.error('   Workflow CRUD endpoints require session auth, not API keys.');
-    console.error('   We can only test operations on an existing workflow.\n');
-    throw new Error('TEST_WORKFLOW_ID required');
-  }
+  const tempWorkflowId = process.env.TEST_WORKFLOW_ID;
+  if (!tempWorkflowId) throw new Error('Missing TEST_WORKFLOW_ID');
 
   console.log(`Testing operations on workflow: ${tempWorkflowId}`);
 
-  // 5) Blocks operations
   const newBlockId = `e2e-block-${Date.now()}`;
   const secondBlockId = `e2e-block-2-${Date.now()}`;
 
@@ -110,7 +85,6 @@ async function main() {
   });
   console.log('toggleBlockEnabled: ok');
 
-  // updateSubblock with agent's 'messages' subblock
   await updateSubblock(client, {
     workflowId: tempWorkflowId,
     blockId: newBlock.id,
@@ -119,7 +93,6 @@ async function main() {
   });
   console.log('updateSubblock: ok');
 
-  // 6) Edge operations
   const edgeId = `e2e-edge-${Date.now()}`;
   await addEdgeOp(client, {
     workflowId: tempWorkflowId,
@@ -132,7 +105,6 @@ async function main() {
   await removeEdgeOp(client, { workflowId: tempWorkflowId, edgeId });
   console.log('removeEdgeOp: ok');
 
-  // 7) Variables operations
   const varId = `e2e-var-${Date.now()}`;
   await addVariable(client, {
     workflowId: tempWorkflowId,
@@ -146,8 +118,6 @@ async function main() {
   await removeVariable(client, { workflowId: tempWorkflowId, variableId: varId });
   console.log('removeVariable: ok');
 
-  // 8) Subflows operations (subflows are loop/parallel blocks)
-  // Create a loop block first
   const loopBlockId = `e2e-loop-${Date.now()}`;
   await addBlocks(client, {
     workflowId: tempWorkflowId,
@@ -155,7 +125,6 @@ async function main() {
   });
   console.log('addBlocks (loop): ok');
 
-  // Now update the loop's subflow config
   await updateSubflow(client, {
     workflowId: tempWorkflowId,
     id: loopBlockId,
@@ -164,11 +133,9 @@ async function main() {
   });
   console.log('updateSubflow: ok');
 
-  // Remove the loop block (also removes its subflow)
   await removeBlocks(client, { workflowId: tempWorkflowId, blockIds: [loopBlockId] });
   console.log('removeBlocks (loop): ok');
 
-  // 9) Remove blocks cleanup
   await removeBlocks(client, {
     workflowId: tempWorkflowId,
     blockIds: [newBlock.id, secondBlockId],
