@@ -108,15 +108,6 @@ export {
 } from './undeploy.js';
 export type { UndeployWorkflowInput, UndeployWorkflowOutput } from './undeploy.js';
 
-// Replace workflow state tool
-export {
-  REPLACE_WORKFLOW_STATE_DESCRIPTION,
-  REPLACE_WORKFLOW_STATE_TOOL_NAME,
-  replaceWorkflowState,
-  replaceWorkflowStateInputSchema,
-} from './replace-state.js';
-export type { ReplaceWorkflowStateInput, ReplaceWorkflowStateOutput } from './replace-state.js';
-
 // Execute workflow tool
 export {
   EXECUTE_WORKFLOW_DESCRIPTION,

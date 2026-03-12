@@ -5,7 +5,7 @@
  * These schemas are used by the new operation-based tools.
  */
 
-import { z } from 'zod';
+import { z } from 'zod'
 
 // ==========================================
 // Common Schemas
@@ -17,8 +17,8 @@ import { z } from 'zod';
 export const PositionSchema = z.object({
   x: z.number(),
   y: z.number(),
-});
-export type Position = z.infer<typeof PositionSchema>;
+})
+export type Position = z.infer<typeof PositionSchema>
 
 // ==========================================
 // Export/Import Schemas
@@ -29,8 +29,8 @@ export type Position = z.infer<typeof PositionSchema>;
  */
 export const ExportWorkflowInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
-});
-export type ExportWorkflowInput = z.infer<typeof ExportWorkflowInputSchema>;
+})
+export type ExportWorkflowInput = z.infer<typeof ExportWorkflowInputSchema>
 
 /**
  * Export workflow JSON Schema for MCP registration
@@ -44,7 +44,7 @@ export const exportWorkflowJsonSchema = {
     },
   },
   required: ['workflowId'],
-};
+}
 
 // ==========================================
 // Block Operation Schemas
@@ -62,8 +62,8 @@ export const BlockDataForAddSchema = z.object({
   subBlocks: z.record(z.unknown()).optional(),
   outputs: z.record(z.unknown()).optional(),
   enabled: z.boolean().optional().default(true),
-});
-export type BlockDataForAdd = z.infer<typeof BlockDataForAddSchema>;
+})
+export type BlockDataForAdd = z.infer<typeof BlockDataForAddSchema>
 
 /**
  * Add blocks input schema
@@ -74,8 +74,8 @@ export const AddBlocksInputSchema = z.object({
   loops: z.record(z.unknown()).optional(),
   parallels: z.record(z.unknown()).optional(),
   subBlockValues: z.record(z.record(z.unknown())).optional(),
-});
-export type AddBlocksInput = z.infer<typeof AddBlocksInputSchema>;
+})
+export type AddBlocksInput = z.infer<typeof AddBlocksInputSchema>
 
 /**
  * Add blocks JSON Schema for MCP registration
@@ -128,7 +128,7 @@ export const addBlocksJsonSchema = {
     },
   },
   required: ['workflowId', 'blocks'],
-};
+}
 
 /**
  * Remove blocks input schema
@@ -136,8 +136,8 @@ export const addBlocksJsonSchema = {
 export const RemoveBlocksInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   blockIds: z.array(z.string().min(1)).min(1, 'At least one block ID is required'),
-});
-export type RemoveBlocksInput = z.infer<typeof RemoveBlocksInputSchema>;
+})
+export type RemoveBlocksInput = z.infer<typeof RemoveBlocksInputSchema>
 
 /**
  * Remove blocks JSON Schema for MCP registration
@@ -156,7 +156,7 @@ export const removeBlocksJsonSchema = {
     },
   },
   required: ['workflowId', 'blockIds'],
-};
+}
 
 /**
  * Update block position input schema
@@ -168,8 +168,8 @@ export const UpdateBlockNameInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   blockId: z.string().min(1, 'Block ID is required'),
   name: z.string().min(1, 'Block name is required'),
-});
-export type UpdateBlockNameInput = z.infer<typeof UpdateBlockNameInputSchema>;
+})
+export type UpdateBlockNameInput = z.infer<typeof UpdateBlockNameInputSchema>
 
 /**
  * Update block name JSON Schema for MCP registration
@@ -191,7 +191,7 @@ export const updateBlockNameJsonSchema = {
     },
   },
   required: ['workflowId', 'blockId', 'name'],
-};
+}
 
 /**
  * Toggle block enabled input schema
@@ -200,8 +200,8 @@ export const ToggleBlockEnabledInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   blockId: z.string().min(1, 'Block ID is required'),
   enabled: z.boolean(),
-});
-export type ToggleBlockEnabledInput = z.infer<typeof ToggleBlockEnabledInputSchema>;
+})
+export type ToggleBlockEnabledInput = z.infer<typeof ToggleBlockEnabledInputSchema>
 
 /**
  * Toggle block enabled JSON Schema for MCP registration
@@ -223,7 +223,7 @@ export const toggleBlockEnabledJsonSchema = {
     },
   },
   required: ['workflowId', 'blockId', 'enabled'],
-};
+}
 
 /**
  * Update block parent input schema
@@ -232,8 +232,8 @@ export const UpdateBlockParentInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   blockId: z.string().min(1, 'Block ID is required'),
   parentId: z.string().nullable(),
-});
-export type UpdateBlockParentInput = z.infer<typeof UpdateBlockParentInputSchema>;
+})
+export type UpdateBlockParentInput = z.infer<typeof UpdateBlockParentInputSchema>
 
 /**
  * Update block parent JSON Schema for MCP registration
@@ -256,7 +256,7 @@ export const updateBlockParentJsonSchema = {
     },
   },
   required: ['workflowId', 'blockId', 'parentId'],
-};
+}
 
 /**
  * Update subblock input schema
@@ -266,8 +266,8 @@ export const UpdateSubblockInputSchema = z.object({
   blockId: z.string().min(1, 'Block ID is required'),
   subblockId: z.string().min(1, 'Subblock ID is required'),
   value: z.unknown(), // Can be any JSON value
-});
-export type UpdateSubblockInput = z.infer<typeof UpdateSubblockInputSchema>;
+})
+export type UpdateSubblockInput = z.infer<typeof UpdateSubblockInputSchema>
 
 /**
  * Update subblock JSON Schema for MCP registration
@@ -292,7 +292,7 @@ export const updateSubblockJsonSchema = {
     },
   },
   required: ['workflowId', 'blockId', 'subblockId', 'value'],
-};
+}
 
 // ==========================================
 // Edge Operation Schemas
@@ -308,8 +308,8 @@ export const AddEdgeOpInputSchema = z.object({
   sourceHandle: z.string().optional(),
   targetHandle: z.string().optional(),
   edgeId: z.string().optional(), // Auto-generate if not provided
-});
-export type AddEdgeOpInput = z.infer<typeof AddEdgeOpInputSchema>;
+})
+export type AddEdgeOpInput = z.infer<typeof AddEdgeOpInputSchema>
 
 /**
  * Add edge JSON Schema for MCP registration
@@ -343,7 +343,7 @@ export const addEdgeOpJsonSchema = {
     },
   },
   required: ['workflowId', 'source', 'target'],
-};
+}
 
 /**
  * Remove edge input schema
@@ -351,8 +351,8 @@ export const addEdgeOpJsonSchema = {
 export const RemoveEdgeOpInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   edgeId: z.string().min(1, 'Edge ID is required'),
-});
-export type RemoveEdgeOpInput = z.infer<typeof RemoveEdgeOpInputSchema>;
+})
+export type RemoveEdgeOpInput = z.infer<typeof RemoveEdgeOpInputSchema>
 
 /**
  * Remove edge JSON Schema for MCP registration
@@ -370,7 +370,7 @@ export const removeEdgeOpJsonSchema = {
     },
   },
   required: ['workflowId', 'edgeId'],
-};
+}
 
 // ==========================================
 // Workflow State Operation Schemas
@@ -382,8 +382,8 @@ export const removeEdgeOpJsonSchema = {
 export const ReplaceWorkflowStateInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   state: z.any(), // Full workflow state object
-});
-export type ReplaceWorkflowStateInput = z.infer<typeof ReplaceWorkflowStateInputSchema>;
+})
+export type ReplaceWorkflowStateInput = z.infer<typeof ReplaceWorkflowStateInputSchema>
 
 /**
  * Replace workflow state JSON Schema for MCP registration
@@ -397,11 +397,12 @@ export const replaceWorkflowStateJsonSchema = {
     },
     state: {
       type: 'object',
-      description: 'Complete workflow state to replace with (blocks, edges, loops, parallels)',
+      description:
+        'Complete workflow state to replace with. The current backend contract accepts blocks and edges, supports loops/parallels, and may also include variables plus workflow metadata fields such as lastSaved, isDeployed, and deployedAt.',
     },
   },
   required: ['workflowId', 'state'],
-};
+}
 
 // ==========================================
 // Variable Operation Schemas
@@ -416,8 +417,8 @@ export const AddVariableInputSchema = z.object({
   name: z.string().min(1, 'Variable name is required'),
   type: z.enum(['string', 'number', 'boolean', 'object', 'array', 'plain']),
   value: z.any(),
-});
-export type AddVariableInput = z.infer<typeof AddVariableInputSchema>;
+})
+export type AddVariableInput = z.infer<typeof AddVariableInputSchema>
 
 /**
  * Add variable JSON Schema for MCP registration
@@ -447,7 +448,7 @@ export const addVariableJsonSchema = {
     },
   },
   required: ['workflowId', 'name', 'type', 'value'],
-};
+}
 
 /**
  * Remove variable input schema
@@ -455,8 +456,8 @@ export const addVariableJsonSchema = {
 export const RemoveVariableInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   variableId: z.string().min(1, 'Variable ID is required'),
-});
-export type RemoveVariableInput = z.infer<typeof RemoveVariableInputSchema>;
+})
+export type RemoveVariableInput = z.infer<typeof RemoveVariableInputSchema>
 
 /**
  * Remove variable JSON Schema for MCP registration
@@ -474,7 +475,7 @@ export const removeVariableJsonSchema = {
     },
   },
   required: ['workflowId', 'variableId'],
-};
+}
 
 // ==========================================
 // Subflow Operation Schemas
@@ -488,8 +489,8 @@ export const AddSubflowInputSchema = z.object({
   id: z.string().min(1, 'Subflow ID is required'),
   type: z.enum(['loop', 'parallel']),
   config: z.record(z.any()).optional(),
-});
-export type AddSubflowInput = z.infer<typeof AddSubflowInputSchema>;
+})
+export type AddSubflowInput = z.infer<typeof AddSubflowInputSchema>
 
 /**
  * Add subflow JSON Schema for MCP registration
@@ -516,7 +517,7 @@ export const addSubflowJsonSchema = {
     },
   },
   required: ['workflowId', 'id', 'type'],
-};
+}
 
 /**
  * Update subflow input schema
@@ -526,8 +527,8 @@ export const UpdateSubflowInputSchema = z.object({
   id: z.string().min(1, 'Subflow ID is required'),
   type: z.enum(['loop', 'parallel']).optional(),
   config: z.record(z.any()).optional(),
-});
-export type UpdateSubflowInput = z.infer<typeof UpdateSubflowInputSchema>;
+})
+export type UpdateSubflowInput = z.infer<typeof UpdateSubflowInputSchema>
 
 /**
  * Update subflow JSON Schema for MCP registration
@@ -554,7 +555,7 @@ export const updateSubflowJsonSchema = {
     },
   },
   required: ['workflowId', 'id'],
-};
+}
 
 /**
  * Remove subflow input schema
@@ -562,8 +563,8 @@ export const updateSubflowJsonSchema = {
 export const RemoveSubflowInputSchema = z.object({
   workflowId: z.string().min(1, 'Workflow ID is required'),
   id: z.string().min(1, 'Subflow ID is required'),
-});
-export type RemoveSubflowInput = z.infer<typeof RemoveSubflowInputSchema>;
+})
+export type RemoveSubflowInput = z.infer<typeof RemoveSubflowInputSchema>
 
 /**
  * Remove subflow JSON Schema for MCP registration
@@ -581,7 +582,7 @@ export const removeSubflowJsonSchema = {
     },
   },
   required: ['workflowId', 'id'],
-};
+}
 
 // ==========================================
 // Operation Response Schema
@@ -595,5 +596,5 @@ export const OperationResponseSchema = z.object({
   operationId: z.string(),
   timestamp: z.number(),
   broadcastSent: z.boolean(),
-});
-export type OperationResponseType = z.infer<typeof OperationResponseSchema>;
+})
+export type OperationResponseType = z.infer<typeof OperationResponseSchema>

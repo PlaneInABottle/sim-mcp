@@ -56,7 +56,6 @@ The server currently requires backend API credentials at startup.
 - `get_workflow` — fetch one workflow; use `verbose=true` only when full block config is required
 - `create_workflow` — create a new workflow
 - `delete_workflow` — delete a workflow, with template-check handling options
-- `replace_workflow_state` — replace the entire draft workflow state
 - `get_workflow_status` — inspect deployment/draft status
 - `get_deployed_workflow_state` — fetch the currently deployed state
 - `deploy_workflow` — deploy the current draft
@@ -130,7 +129,7 @@ The server currently requires backend API credentials at startup.
   - `get_workflow(verbose=false)` before `verbose=true`
   - `get_block` for targeted inspection instead of pulling a full verbose workflow
   - `list_custom_tools` / `list_skills` before `get_*`
-- Treat `replace_workflow_state`, `remove_blocks`, `remove_edge`, `remove_variable`, `delete_workflow`, and deployment version activation/revert operations as potentially destructive.
+- Treat `remove_blocks`, `remove_edge`, `remove_variable`, `delete_workflow`, and deployment version activation/revert operations as potentially destructive.
 - `update_subflow` only updates existing loop/parallel containers; creation/removal is handled through block operations.
 - This repo’s authoritative surface is the registered MCP tools above; do not rely on older deleted docs or narrower historical tool lists.
 

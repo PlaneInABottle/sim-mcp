@@ -71,8 +71,6 @@ import {
   REMOVE_EDGE_OP_TOOL_NAME,
   REMOVE_VARIABLE_DESCRIPTION,
   REMOVE_VARIABLE_TOOL_NAME,
-  REPLACE_WORKFLOW_STATE_DESCRIPTION,
-  REPLACE_WORKFLOW_STATE_TOOL_NAME,
   REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_DESCRIPTION,
   REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_TOOL_NAME,
   RUN_BLOCK_DESCRIPTION,
@@ -151,8 +149,6 @@ import {
   removeEdgeOpInputSchema,
   removeVariable,
   removeVariableInputSchema,
-  replaceWorkflowState,
-  replaceWorkflowStateInputSchema,
   revertWorkflowToDeploymentVersion,
   revertWorkflowToDeploymentVersionInputSchema,
   runBlock,
@@ -250,11 +246,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: GET_WORKFLOW_TOOL_NAME,
       description: GET_WORKFLOW_DESCRIPTION,
       inputSchema: getWorkflowInputSchema,
-    },
-    {
-      name: REPLACE_WORKFLOW_STATE_TOOL_NAME,
-      description: REPLACE_WORKFLOW_STATE_DESCRIPTION,
-      inputSchema: replaceWorkflowStateInputSchema,
     },
     {
       name: EXECUTE_WORKFLOW_TOOL_NAME,
@@ -489,14 +480,6 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
           return createResponse(result);
         }
 
-        case REPLACE_WORKFLOW_STATE_TOOL_NAME: {
-          const input = parseToolArguments<{
-            workflowId: string;
-            state: Record<string, unknown>;
-          }>(args);
-          const result = await replaceWorkflowState(apiClient, input);
-          return createResponse(result);
-        }
 
         case EXECUTE_WORKFLOW_TOOL_NAME: {
           const input = parseToolArguments<{
