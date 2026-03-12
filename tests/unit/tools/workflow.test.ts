@@ -6,30 +6,37 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { NotFoundError, ValidationError } from '../../../src/client/index.js';
+import { NotFoundError, SimApiError, SimErrorCode, ValidationError } from '../../../src/client/index.js';
 import type { Block } from '../../../src/schemas/workflow.js';
 import {
+  activateDeploymentVersion,
   cancelExecution,
   deleteWorkflow,
   deployWorkflow,
+  getDeploymentVersion,
   getDeployedWorkflowState,
   getExecutionLogDetail,
   getExecutionLogs,
   getWorkflow,
   getWorkflowStatus,
+  listDeploymentVersions,
   listWorkflows,
   replaceWorkflowState,
+  revertWorkflowToDeploymentVersion,
   runBlock,
   runFromBlock,
   runWorkflowUntilBlock,
   undeployWorkflow,
 } from '../../../src/tools/workflow/index.js';
 import {
+  mockActivateDeploymentVersionResult,
   createMockSimApiClient,
   mockCancelExecutionResult,
+  mockDeploymentVersionStateResult,
   mockDeployedWorkflow,
   mockExecutionLogDetail,
   mockExecutionLogs,
+  mockRevertDeploymentVersionResult,
   mockWorkflow,
   mockWorkflowDeleteCheckResult,
 } from '../../mocks/sim-api.js';
@@ -228,6 +235,204 @@ describe('Workflow Tools', () => {
       expect(result.isDeployed).toBe(true);
       expect(result.apiKey).toBe('Workspace API keys');
       expect(mockClient.deployWorkflow).toHaveBeenCalledWith('wf-123');
+    });
+  });
+
+  describe('deployment versions', () => {
+    it('should list concise deployment versions', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await listDeploymentVersions(mockClient, { workflowId: 'wf-123' });
+
+      expect(result.workflowId).toBe('wf-123');
+      expect(result.versions[0]).toEqual({
+        version: 3,
+        name: 'Current active deployment',
+        description: 'Latest deployed state',
+        isActive: true,
+        createdAt: '2024-01-16T12:00:00.000Z',
+        deployedBy: 'Admin',
+      });
+      expect(mockClient.listDeploymentVersions).toHaveBeenCalledWith('wf-123');
+    });
+
+    it('should preserve workflow-level 404s when listing deployment versions', async () => {
+      const mockClient = createMockSimApiClient({
+        listDeploymentVersions: async () => {
+          throw new NotFoundError('Workflow', 'wf-missing');
+        },
+      });
+
+      await expect(
+        listDeploymentVersions(mockClient, { workflowId: 'wf-missing' })
+      ).rejects.toThrow('Workflow not found: wf-missing');
+    });
+
+    it('should get version summary without deployed state by default', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getDeploymentVersion(mockClient, {
+        workflowId: 'wf-123',
+        version: 3,
+      });
+
+      expect(result.workflowId).toBe('wf-123');
+      expect(result.version.version).toBe(3);
+      expect(result.deployedState).toBeUndefined();
+      expect(mockClient.listDeploymentVersions).toHaveBeenCalledWith('wf-123');
+      expect(mockClient.getDeploymentVersion).not.toHaveBeenCalled();
+    });
+
+    it('should include deployed state only when requested', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await getDeploymentVersion(mockClient, {
+        workflowId: 'wf-123',
+        version: 3,
+        includeState: true,
+      });
+
+      expect(result.deployedState).toEqual(mockDeploymentVersionStateResult.deployedState);
+      expect(mockClient.getDeploymentVersion).toHaveBeenCalledWith('wf-123', 3);
+    });
+
+    it('should preserve workflow-level 404s during deployment version lookup', async () => {
+      const mockClient = createMockSimApiClient({
+        listDeploymentVersions: async () => {
+          throw new NotFoundError('Workflow', 'wf-missing');
+        },
+      });
+
+      await expect(
+        getDeploymentVersion(mockClient, { workflowId: 'wf-missing', version: 3 })
+      ).rejects.toThrow('Workflow not found: wf-missing');
+    });
+
+    it('should map state-fetch 404s to deployment-version-not-found after version validation', async () => {
+      const mockClient = createMockSimApiClient({
+        getDeploymentVersion: async () => {
+          throw new SimApiError('deployment version missing', 404, SimErrorCode.NOT_FOUND, {
+            resource: 'DeploymentVersion',
+            id: '3',
+          });
+        },
+      });
+
+      await expect(
+        getDeploymentVersion(mockClient, { workflowId: 'wf-123', version: 3, includeState: true })
+      ).rejects.toThrow('could not find that deployment version');
+    });
+
+    it('should fail before any API call when workflowId is missing', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        getDeploymentVersion(mockClient, { workflowId: '', version: 3 })
+      ).rejects.toThrow("Missing required parameter 'workflowId'");
+      expect(mockClient.listDeploymentVersions).not.toHaveBeenCalled();
+    });
+
+    it('should fail before any API call when version is missing', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        getDeploymentVersion(mockClient, { workflowId: 'wf-123', version: undefined as never })
+      ).rejects.toThrow("Missing required parameter 'version'");
+      expect(mockClient.listDeploymentVersions).not.toHaveBeenCalled();
+    });
+
+    it('should reject non-numeric deployment version input with next-step hint', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        getDeploymentVersion(mockClient, { workflowId: 'wf-123', version: 'abc' as never })
+      ).rejects.toThrow('Call list_deployment_versions first');
+      expect(mockClient.listDeploymentVersions).not.toHaveBeenCalled();
+    });
+
+    it('should activate deployment version with concise response', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await activateDeploymentVersion(mockClient, {
+        workflowId: 'wf-123',
+        version: 3,
+      });
+
+      expect(result).toEqual({
+        success: true,
+        workflowId: 'wf-123',
+        version: 3,
+        deployedAt: mockActivateDeploymentVersionResult.deployedAt,
+        warnings: mockActivateDeploymentVersionResult.warnings,
+      });
+      expect(mockClient.activateDeploymentVersion).toHaveBeenCalledWith('wf-123', 3);
+    });
+
+    it('should map missing deployment versions during activation to not-found error', async () => {
+      const mockClient = createMockSimApiClient({
+        activateDeploymentVersion: async () => {
+          throw new NotFoundError('Resource', 'unknown');
+        },
+      });
+
+      await expect(
+        activateDeploymentVersion(mockClient, { workflowId: 'wf-123', version: 99 })
+      ).rejects.toThrow('could not find that deployment version');
+    });
+
+    it('should preserve workflow-level 404s during activation', async () => {
+      const mockClient = createMockSimApiClient({
+        activateDeploymentVersion: async () => {
+          throw new NotFoundError('Workflow', 'wf-missing');
+        },
+      });
+
+      await expect(
+        activateDeploymentVersion(mockClient, { workflowId: 'wf-missing', version: 3 })
+      ).rejects.toThrow('Workflow not found: wf-missing');
+    });
+
+    it('should return concise revert response', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await revertWorkflowToDeploymentVersion(mockClient, {
+        workflowId: 'wf-123',
+        version: 2,
+      });
+
+      expect(result).toEqual({
+        success: true,
+        workflowId: 'wf-123',
+        version: 2,
+        lastSaved: mockRevertDeploymentVersionResult.lastSaved,
+      });
+      expect(mockClient.revertWorkflowToDeploymentVersion).toHaveBeenCalledWith('wf-123', 2);
+    });
+
+    it('should surface permission errors distinctly for mutation tools', async () => {
+      const mockClient = createMockSimApiClient({
+        revertWorkflowToDeploymentVersion: async () => {
+          const error = new Error('Forbidden');
+          Object.assign(error, { statusCode: 403 });
+          throw error;
+        },
+      });
+
+      await expect(
+        revertWorkflowToDeploymentVersion(mockClient, { workflowId: 'wf-123', version: 2 })
+      ).rejects.toThrow('requires additional workflow permissions');
+    });
+
+    it('should preserve workflow-level 404s during revert', async () => {
+      const mockClient = createMockSimApiClient({
+        revertWorkflowToDeploymentVersion: async () => {
+          throw new NotFoundError('Workflow', 'wf-missing');
+        },
+      });
+
+      await expect(
+        revertWorkflowToDeploymentVersion(mockClient, { workflowId: 'wf-missing', version: 2 })
+      ).rejects.toThrow('Workflow not found: wf-missing');
     });
   });
 

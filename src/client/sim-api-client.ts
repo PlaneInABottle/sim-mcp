@@ -25,12 +25,16 @@ import {
   mapHttpError,
 } from './errors.js';
 import type {
+  ActivateDeploymentVersionResult,
   ApiResponse,
   DeployedWorkflowStateResult,
+  DeploymentVersionListResult,
+  DeploymentVersionStateResult,
   HttpMethod,
   OperationRequest,
   OperationResponse,
   RequestOptions,
+  RevertDeploymentVersionResult,
   WorkflowDeleteCheckResult,
   WorkflowDeploymentResult,
   WorkflowExportPayload,
@@ -96,6 +100,10 @@ function setQueryParamIfDefined(
     queryParams[key] = value;
   }
 }
+
+const DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS: RequestOptions = {
+  retries: 0,
+};
 
 /**
  * SimApiClient - HTTP client for sim API communication
@@ -440,6 +448,47 @@ export class SimApiClient {
 
   async undeployWorkflow(workflowId: string): Promise<WorkflowDeploymentResult> {
     return this.delete<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`);
+  }
+
+  async listDeploymentVersions(workflowId: string): Promise<DeploymentVersionListResult> {
+    return this.get<DeploymentVersionListResult>(
+      `/api/workflows/${workflowId}/deployments`,
+      undefined,
+      DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
+    );
+  }
+
+  async getDeploymentVersion(
+    workflowId: string,
+    version: number
+  ): Promise<DeploymentVersionStateResult> {
+    return this.get<DeploymentVersionStateResult>(
+      `/api/workflows/${workflowId}/deployments/${version}`,
+      undefined,
+      DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
+    );
+  }
+
+  async activateDeploymentVersion(
+    workflowId: string,
+    version: number
+  ): Promise<ActivateDeploymentVersionResult> {
+    return this.patch<ActivateDeploymentVersionResult>(
+      `/api/workflows/${workflowId}/deployments/${version}`,
+      { isActive: true },
+      DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
+    );
+  }
+
+  async revertWorkflowToDeploymentVersion(
+    workflowId: string,
+    version: number
+  ): Promise<RevertDeploymentVersionResult> {
+    return this.post<RevertDeploymentVersionResult>(
+      `/api/workflows/${workflowId}/deployments/${version}/revert`,
+      undefined,
+      DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
+    );
   }
 
   async deleteWorkflow(options: {

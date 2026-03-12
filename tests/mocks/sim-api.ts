@@ -9,9 +9,13 @@ import { vi } from 'vitest';
 
 import type { SimApiClient } from '../../src/client/sim-api-client.js';
 import type {
+  ActivateDeploymentVersionResult,
+  DeploymentVersionListResult,
+  DeploymentVersionStateResult,
   ExecutionResult,
   ImportWorkflowResponse,
   OperationResponse,
+  RevertDeploymentVersionResult,
   WorkflowExportPayload,
 } from '../../src/client/types.js';
 import type { CustomTool } from '../../src/schemas/custom-tools.js';
@@ -229,6 +233,55 @@ export const mockWorkflowDeploymentResult = {
   warnings: [],
 };
 
+export const mockDeploymentVersionListResult: DeploymentVersionListResult = {
+  versions: [
+    {
+      version: 3,
+      name: 'Current active deployment',
+      description: 'Latest deployed state',
+      isActive: true,
+      createdAt: '2024-01-16T12:00:00.000Z',
+      deployedBy: 'Admin',
+    },
+    {
+      version: 2,
+      name: 'Previous deployment',
+      description: 'Known good backup',
+      isActive: false,
+      createdAt: '2024-01-15T12:00:00.000Z',
+      deployedBy: 'Alice',
+    },
+  ],
+};
+
+export const mockDeploymentVersionStateResult: DeploymentVersionStateResult = {
+  deployedState: {
+    blocks: {
+      'block-1': {
+        id: 'block-1',
+        type: 'start_trigger',
+        name: 'Start',
+        position: { x: 100, y: 100 },
+        enabled: true,
+      },
+    },
+    edges: [],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockActivateDeploymentVersionResult: ActivateDeploymentVersionResult = {
+  success: true,
+  deployedAt: '2024-01-17T12:00:00.000Z',
+  warnings: ['Webhook sync reused existing subscription'],
+};
+
+export const mockRevertDeploymentVersionResult: RevertDeploymentVersionResult = {
+  message: 'Reverted to deployment version',
+  lastSaved: 1737129600000,
+};
+
 export const mockWorkflowDeleteCheckResult = {
   hasPublishedTemplates: true,
   count: 1,
@@ -390,6 +443,10 @@ export function createMockSimApiClient(
     getWorkflowStatus: [],
     getDeployedWorkflowState: [],
     deployWorkflow: [],
+    listDeploymentVersions: [],
+    getDeploymentVersion: [],
+    activateDeploymentVersion: [],
+    revertWorkflowToDeploymentVersion: [],
     undeployWorkflow: [],
     executeWorkflow: [],
     cancelExecution: [],
@@ -448,6 +505,22 @@ export function createMockSimApiClient(
     deployWorkflow: async (workflowId) => {
       callHistory.deployWorkflow.push(workflowId);
       return { ...mockWorkflowDeploymentResult };
+    },
+    listDeploymentVersions: async (workflowId) => {
+      callHistory.listDeploymentVersions.push(workflowId);
+      return { ...mockDeploymentVersionListResult };
+    },
+    getDeploymentVersion: async (workflowId, version) => {
+      callHistory.getDeploymentVersion.push({ workflowId, version });
+      return { ...mockDeploymentVersionStateResult };
+    },
+    activateDeploymentVersion: async (workflowId, version) => {
+      callHistory.activateDeploymentVersion.push({ workflowId, version });
+      return { ...mockActivateDeploymentVersionResult };
+    },
+    revertWorkflowToDeploymentVersion: async (workflowId, version) => {
+      callHistory.revertWorkflowToDeploymentVersion.push({ workflowId, version });
+      return { ...mockRevertDeploymentVersionResult };
     },
     undeployWorkflow: async (workflowId) => {
       callHistory.undeployWorkflow.push(workflowId);
@@ -573,6 +646,10 @@ export function createMockSimApiClient(
     getWorkflowStatus: vi.fn(methods.getWorkflowStatus),
     getDeployedWorkflowState: vi.fn(methods.getDeployedWorkflowState),
     deployWorkflow: vi.fn(methods.deployWorkflow),
+    listDeploymentVersions: vi.fn(methods.listDeploymentVersions),
+    getDeploymentVersion: vi.fn(methods.getDeploymentVersion),
+    activateDeploymentVersion: vi.fn(methods.activateDeploymentVersion),
+    revertWorkflowToDeploymentVersion: vi.fn(methods.revertWorkflowToDeploymentVersion),
     undeployWorkflow: vi.fn(methods.undeployWorkflow),
     executeWorkflow: vi.fn(methods.executeWorkflow),
     cancelExecution: vi.fn(methods.cancelExecution),
@@ -628,6 +705,19 @@ export interface MockSimApiClientMethods {
   getWorkflowStatus: (workflowId: string) => Promise<typeof mockWorkflowStatus>;
   getDeployedWorkflowState: (workflowId: string) => Promise<typeof mockDeployedWorkflowState>;
   deployWorkflow: (workflowId: string) => Promise<typeof mockWorkflowDeploymentResult>;
+  listDeploymentVersions: (workflowId: string) => Promise<DeploymentVersionListResult>;
+  getDeploymentVersion: (
+    workflowId: string,
+    version: number
+  ) => Promise<DeploymentVersionStateResult>;
+  activateDeploymentVersion: (
+    workflowId: string,
+    version: number
+  ) => Promise<ActivateDeploymentVersionResult>;
+  revertWorkflowToDeploymentVersion: (
+    workflowId: string,
+    version: number
+  ) => Promise<RevertDeploymentVersionResult>;
   undeployWorkflow: (workflowId: string) => Promise<{
     apiKey: null;
     isDeployed: false;
@@ -752,6 +842,10 @@ export interface MockCallHistory {
   getWorkflowStatus: string[];
   getDeployedWorkflowState: string[];
   deployWorkflow: string[];
+  listDeploymentVersions: string[];
+  getDeploymentVersion: Array<{ workflowId: string; version: number }>;
+  activateDeploymentVersion: Array<{ workflowId: string; version: number }>;
+  revertWorkflowToDeploymentVersion: Array<{ workflowId: string; version: number }>;
   undeployWorkflow: string[];
   executeWorkflow: Array<{
     workflowId: string;

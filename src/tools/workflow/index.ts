@@ -48,6 +48,40 @@ export {
 export type { DeployWorkflowInput, DeployWorkflowOutput } from './deploy.js';
 
 export {
+  LIST_DEPLOYMENT_VERSIONS_DESCRIPTION,
+  LIST_DEPLOYMENT_VERSIONS_TOOL_NAME,
+  listDeploymentVersions,
+  listDeploymentVersionsInputSchema,
+  GET_DEPLOYMENT_VERSION_DESCRIPTION,
+  GET_DEPLOYMENT_VERSION_TOOL_NAME,
+  getDeploymentVersion,
+  getDeploymentVersionInputSchema,
+} from './deployment-versions.js';
+export type {
+  GetDeploymentVersionInput,
+  GetDeploymentVersionOutput,
+  ListDeploymentVersionsInput,
+  ListDeploymentVersionsOutput,
+} from './deployment-versions.js';
+
+export {
+  ACTIVATE_DEPLOYMENT_VERSION_DESCRIPTION,
+  ACTIVATE_DEPLOYMENT_VERSION_TOOL_NAME,
+  activateDeploymentVersion,
+  activateDeploymentVersionInputSchema,
+  REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_DESCRIPTION,
+  REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_TOOL_NAME,
+  revertWorkflowToDeploymentVersion,
+  revertWorkflowToDeploymentVersionInputSchema,
+} from './deployment-version-mutations.js';
+export type {
+  ActivateDeploymentVersionInput,
+  ActivateDeploymentVersionOutput,
+  RevertWorkflowToDeploymentVersionInput,
+  RevertWorkflowToDeploymentVersionOutput,
+} from './deployment-version-mutations.js';
+
+export {
   GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
   GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
   getDeployedWorkflowState,

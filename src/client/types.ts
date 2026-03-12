@@ -298,6 +298,36 @@ export interface WorkflowDeploymentResult {
   warnings?: string[];
 }
 
+export interface DeploymentVersionSummary {
+  version: number;
+  name: string | null;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  deployedBy: string | null;
+}
+
+export interface DeploymentVersionListResult {
+  versions: DeploymentVersionSummary[];
+}
+
+export interface DeploymentVersionStateResult {
+  deployedState: WorkflowState;
+}
+
+export interface ActivateDeploymentVersionResult {
+  success: boolean;
+  deployedAt: string | null;
+  warnings?: string[];
+  name?: string | null;
+  description?: string | null;
+}
+
+export interface RevertDeploymentVersionResult {
+  message: string;
+  lastSaved: number;
+}
+
 export interface WorkflowDeleteTemplateSummary {
   id: string;
   name: string;

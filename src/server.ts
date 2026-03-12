@@ -17,6 +17,8 @@ import {
 import { type SimApiClient, createSimApiClient, formatMcpError } from './client/index.js';
 import { ConfigurationError, type SimMcpConfig, loadConfig } from './config/index.js';
 import {
+  ACTIVATE_DEPLOYMENT_VERSION_DESCRIPTION,
+  ACTIVATE_DEPLOYMENT_VERSION_TOOL_NAME,
   ADD_BLOCKS_DESCRIPTION,
   ADD_BLOCKS_TOOL_NAME,
   ADD_EDGE_OP_DESCRIPTION,
@@ -35,6 +37,8 @@ import {
   DELETE_WORKFLOW_TOOL_NAME,
   DEPLOY_WORKFLOW_DESCRIPTION,
   DEPLOY_WORKFLOW_TOOL_NAME,
+  GET_DEPLOYMENT_VERSION_DESCRIPTION,
+  GET_DEPLOYMENT_VERSION_TOOL_NAME,
   EXECUTE_WORKFLOW_DESCRIPTION,
   EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
@@ -55,6 +59,8 @@ import {
   GET_WORKFLOW_TOOL_NAME,
   LIST_CUSTOM_TOOLS_DESCRIPTION,
   LIST_CUSTOM_TOOLS_TOOL_NAME,
+  LIST_DEPLOYMENT_VERSIONS_DESCRIPTION,
+  LIST_DEPLOYMENT_VERSIONS_TOOL_NAME,
   LIST_SKILLS_DESCRIPTION,
   LIST_SKILLS_TOOL_NAME,
   LIST_WORKFLOWS_DESCRIPTION,
@@ -67,6 +73,8 @@ import {
   REMOVE_VARIABLE_TOOL_NAME,
   REPLACE_WORKFLOW_STATE_DESCRIPTION,
   REPLACE_WORKFLOW_STATE_TOOL_NAME,
+  REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_DESCRIPTION,
+  REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_TOOL_NAME,
   RUN_BLOCK_DESCRIPTION,
   RUN_BLOCK_TOOL_NAME,
   RUN_FROM_BLOCK_DESCRIPTION,
@@ -89,6 +97,8 @@ import {
   UPDATE_SUBFLOW_TOOL_NAME,
   UPSERT_CUSTOM_TOOLS_DESCRIPTION,
   UPSERT_CUSTOM_TOOLS_TOOL_NAME,
+  activateDeploymentVersion,
+  activateDeploymentVersionInputSchema,
   addBlocks,
   addBlocksInputSchema,
   addEdgeOp,
@@ -107,6 +117,8 @@ import {
   deleteWorkflowInputSchema,
   deployWorkflow,
   deployWorkflowInputSchema,
+  getDeploymentVersion,
+  getDeploymentVersionInputSchema,
   executeWorkflow,
   executeWorkflowInputSchema,
   getBlock,
@@ -127,6 +139,8 @@ import {
   getWorkflowStatusInputSchema,
   listCustomTools,
   listCustomToolsInputSchema,
+  listDeploymentVersions,
+  listDeploymentVersionsInputSchema,
   listSkills,
   listSkillsInputSchema,
   listWorkflows,
@@ -139,6 +153,8 @@ import {
   removeVariableInputSchema,
   replaceWorkflowState,
   replaceWorkflowStateInputSchema,
+  revertWorkflowToDeploymentVersion,
+  revertWorkflowToDeploymentVersionInputSchema,
   runBlock,
   runBlockInputSchema,
   runFromBlock,
@@ -289,6 +305,26 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: DEPLOY_WORKFLOW_TOOL_NAME,
       description: DEPLOY_WORKFLOW_DESCRIPTION,
       inputSchema: deployWorkflowInputSchema,
+    },
+    {
+      name: LIST_DEPLOYMENT_VERSIONS_TOOL_NAME,
+      description: LIST_DEPLOYMENT_VERSIONS_DESCRIPTION,
+      inputSchema: listDeploymentVersionsInputSchema,
+    },
+    {
+      name: GET_DEPLOYMENT_VERSION_TOOL_NAME,
+      description: GET_DEPLOYMENT_VERSION_DESCRIPTION,
+      inputSchema: getDeploymentVersionInputSchema,
+    },
+    {
+      name: ACTIVATE_DEPLOYMENT_VERSION_TOOL_NAME,
+      description: ACTIVATE_DEPLOYMENT_VERSION_DESCRIPTION,
+      inputSchema: activateDeploymentVersionInputSchema,
+    },
+    {
+      name: REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_TOOL_NAME,
+      description: REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_DESCRIPTION,
+      inputSchema: revertWorkflowToDeploymentVersionInputSchema,
     },
     {
       name: UNDEPLOY_WORKFLOW_TOOL_NAME,
@@ -557,6 +593,34 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
         case DEPLOY_WORKFLOW_TOOL_NAME: {
           const input = parseToolArguments<{ workflowId: string }>(args);
           const result = await deployWorkflow(apiClient, input);
+          return createResponse(result);
+        }
+
+        case LIST_DEPLOYMENT_VERSIONS_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await listDeploymentVersions(apiClient, input);
+          return createResponse(result);
+        }
+
+        case GET_DEPLOYMENT_VERSION_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            version: number;
+            includeState?: boolean;
+          }>(args);
+          const result = await getDeploymentVersion(apiClient, input);
+          return createResponse(result);
+        }
+
+        case ACTIVATE_DEPLOYMENT_VERSION_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string; version: number }>(args);
+          const result = await activateDeploymentVersion(apiClient, input);
+          return createResponse(result);
+        }
+
+        case REVERT_WORKFLOW_TO_DEPLOYMENT_VERSION_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string; version: number }>(args);
+          const result = await revertWorkflowToDeploymentVersion(apiClient, input);
           return createResponse(result);
         }
 
