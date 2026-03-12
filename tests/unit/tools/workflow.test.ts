@@ -21,7 +21,6 @@ import {
   getWorkflowStatus,
   listDeploymentVersions,
   listWorkflows,
-  replaceWorkflowState,
   revertWorkflowToDeploymentVersion,
   runBlock,
   runFromBlock,
@@ -159,47 +158,6 @@ describe('Workflow Tools', () => {
       await expect(getWorkflow(mockClient, { workflowId: 'wf-123' })).rejects.toThrow(
         'Network error'
       );
-    });
-  });
-
-  describe('replaceWorkflowState', () => {
-    it('should return operation result', async () => {
-      const mockClient = createMockSimApiClient();
-
-      const result = await replaceWorkflowState(mockClient, {
-        workflowId: 'wf-123',
-        state: { blocks: {}, edges: [], loops: {}, parallels: {} },
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.operationId).toBeDefined();
-    });
-
-    it('should call client with correct parameters', async () => {
-      const mockClient = createMockSimApiClient();
-      const stateData = { blocks: { 'block-1': {} }, edges: [], loops: {}, parallels: {} };
-
-      await replaceWorkflowState(mockClient, {
-        workflowId: 'wf-123',
-        state: stateData,
-      });
-
-      expect(mockClient.replaceWorkflowState).toHaveBeenCalledWith('wf-123', stateData);
-    });
-
-    it('should propagate API errors', async () => {
-      const mockClient = createMockSimApiClient({
-        replaceWorkflowState: async () => {
-          throw new Error('Replace failed');
-        },
-      });
-
-      await expect(
-        replaceWorkflowState(mockClient, {
-          workflowId: 'wf-123',
-          state: { blocks: {}, edges: [], loops: {}, parallels: {} },
-        })
-      ).rejects.toThrow('Replace failed');
     });
   });
 

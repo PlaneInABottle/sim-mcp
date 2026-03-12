@@ -10,20 +10,19 @@ import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type AxiosResponse,
-} from 'axios';
-
-import type { CustomTool, CustomToolInput } from '../schemas/custom-tools.js';
-import type { Skill, SkillInput } from '../schemas/skills.js';
-import type { Workflow, WorkflowWithBlocks } from '../schemas/workflow.js';
-import { getLogger, logApiError, logRequest } from '../utils/logger.js';
-import { AuthManager } from './auth.js';
+} from 'axios'
+import type { CustomTool, CustomToolInput } from '../schemas/custom-tools.js'
+import type { Skill, SkillInput } from '../schemas/skills.js'
+import type { Workflow, WorkflowWithBlocks } from '../schemas/workflow.js'
+import { getLogger, logApiError, logRequest } from '../utils/logger.js'
+import { AuthManager } from './auth.js'
 import {
   AuthenticationError,
+  mapHttpError,
   NetworkError,
   SimApiError,
   TimeoutError,
-  mapHttpError,
-} from './errors.js';
+} from './errors.js'
 import type {
   ActivateDeploymentVersionResult,
   ApiResponse,
@@ -40,55 +39,55 @@ import type {
   WorkflowExportPayload,
   WorkflowState,
   WorkflowStatusResult,
-} from './types.js';
+} from './types.js'
 
 /**
  * Workflow payload returned by workflow endpoints.
  */
 type WorkflowApiResponse = Workflow & {
-  state?: WorkflowState;
-  color?: string;
-  folderId?: string | null;
-};
+  state?: WorkflowState
+  color?: string
+  folderId?: string | null
+}
 
 /**
  * Configuration for SimApiClient
  */
 export interface SimApiClientConfig {
   /** Base URL of the sim API */
-  baseUrl: string;
+  baseUrl: string
   /** API key for authentication */
-  apiKey: string;
+  apiKey: string
   /** Request timeout in milliseconds */
-  timeout?: number;
+  timeout?: number
   /** Number of retry attempts for failed requests */
-  retries?: number;
+  retries?: number
 }
 
 /**
  * Delay between retry attempts (exponential backoff base in ms)
  */
-const RETRY_DELAY_BASE = 1000;
+const RETRY_DELAY_BASE = 1000
 
 /**
  * Generate a unique request ID
  */
 function generateRequestId(): string {
-  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
 /**
  * Sleep for a specified duration
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
  * Calculate exponential backoff delay
  */
 function getRetryDelay(attempt: number): number {
-  return RETRY_DELAY_BASE * 2 ** attempt;
+  return RETRY_DELAY_BASE * 2 ** attempt
 }
 
 function setQueryParamIfDefined(
@@ -97,34 +96,38 @@ function setQueryParamIfDefined(
   value: string | number | boolean | undefined
 ): void {
   if (value !== undefined && value !== null && value !== '') {
-    queryParams[key] = value;
+    queryParams[key] = value
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 const DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS: RequestOptions = {
   retries: 0,
-};
+}
 
 /**
  * SimApiClient - HTTP client for sim API communication
  */
 export class SimApiClient {
-  private readonly client: AxiosInstance;
-  private readonly authManager: AuthManager;
-  private readonly timeout: number;
-  private readonly retries: number;
-  private readonly baseUrl: string;
+  private readonly client: AxiosInstance
+  private readonly authManager: AuthManager
+  private readonly timeout: number
+  private readonly retries: number
+  private readonly baseUrl: string
 
   constructor(config: SimApiClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, ''); // Remove trailing slash
-    this.timeout = config.timeout ?? 30000;
-    this.retries = config.retries ?? 3;
+    this.baseUrl = config.baseUrl.replace(/\/$/, '') // Remove trailing slash
+    this.timeout = config.timeout ?? 30000
+    this.retries = config.retries ?? 3
 
     // Initialize auth manager
     this.authManager = new AuthManager({
       apiKey: config.apiKey,
       validateFormat: false, // Allow any format during development
-    });
+    })
 
     // Create axios instance with default configuration
     this.client = axios.create({
@@ -134,24 +137,24 @@ export class SimApiClient {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-    });
+    })
   }
 
   /**
    * Update the API key used for authentication
    */
   setApiKey(apiKey: string): void {
-    this.authManager.setApiKey(apiKey);
+    this.authManager.setApiKey(apiKey)
     getLogger().info('API key updated', {
       operation: 'set_api_key',
-    });
+    })
   }
 
   /**
    * Get the base URL
    */
   getBaseUrl(): string {
-    return this.baseUrl;
+    return this.baseUrl
   }
 
   /**
@@ -171,19 +174,19 @@ export class SimApiClient {
         ...this.authManager.getHeaders(),
         ...options?.headers,
       },
-    };
+    }
 
     // Add data for POST, PUT, PATCH requests
     if (data !== undefined && ['POST', 'PUT', 'PATCH'].includes(method)) {
-      config.data = data;
+      config.data = data
     }
 
     // Add query params for GET, DELETE with data
     if (data !== undefined && ['GET', 'DELETE'].includes(method)) {
-      config.params = data;
+      config.params = data
     }
 
-    return config;
+    return config
   }
 
   /**
@@ -192,12 +195,12 @@ export class SimApiClient {
   private shouldRetry(error: Error, attempt: number, maxRetries: number): boolean {
     // Don't retry authentication errors
     if (error instanceof AuthenticationError) {
-      return false;
+      return false
     }
 
     // Check if error is retryable and we have attempts remaining
-    const isRetryable = error instanceof SimApiError && error.retryable;
-    return isRetryable && attempt < maxRetries;
+    const isRetryable = error instanceof SimApiError && error.retryable
+    return isRetryable && attempt < maxRetries
   }
 
   /**
@@ -206,29 +209,29 @@ export class SimApiClient {
   private handleRequestError<T>(error: unknown, config: AxiosRequestConfig): SimApiError | Error {
     // Handle axios errors
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiResponse<T>>;
+      const axiosError = error as AxiosError<ApiResponse<T>>
 
       // Network or timeout errors - may be retryable
       if (!axiosError.response) {
         if (axiosError.code === 'ECONNABORTED') {
-          return new TimeoutError(config.timeout ?? this.timeout);
+          return new TimeoutError(config.timeout ?? this.timeout)
         }
-        return new NetworkError(axiosError.message || 'Network error', axiosError);
+        return new NetworkError(axiosError.message || 'Network error', axiosError)
       }
 
       // HTTP error response
-      const status = axiosError.response.status;
-      const apiError = axiosError.response.data?.error;
+      const status = axiosError.response.status
+      const apiError = axiosError.response.data?.error
 
       // Handle both string and object error formats from backend
       const message =
-        typeof apiError === 'string' ? apiError : (apiError?.message ?? axiosError.message);
-      const details = typeof apiError === 'object' ? apiError?.details : undefined;
-      return mapHttpError(status, message, details);
+        typeof apiError === 'string' ? apiError : (apiError?.message ?? axiosError.message)
+      const details = typeof apiError === 'object' ? apiError?.details : undefined
+      return mapHttpError(status, message, details)
     }
 
     // Return original error if not an axios error
-    return error instanceof Error ? error : new Error(String(error));
+    return error instanceof Error ? error : new Error(String(error))
   }
 
   /**
@@ -237,10 +240,73 @@ export class SimApiClient {
   private processResponse<T>(response: AxiosResponse<ApiResponse<T>>): T {
     // Handle API-level errors in successful HTTP responses
     if (response.data && !response.data.success && response.data.error) {
-      throw mapHttpError(response.status, response.data.error.message, response.data.error.details);
+      throw mapHttpError(response.status, response.data.error.message, response.data.error.details)
     }
     // Return the data payload or full response
-    return (response.data?.data ?? response.data) as T;
+    return (response.data?.data ?? response.data) as T
+  }
+
+  /**
+   * Execute an HTTP request with retry logic and customizable response extraction.
+   */
+  private async executeRequest<T>(
+    method: HttpMethod,
+    path: string,
+    data: unknown | undefined,
+    options: RequestOptions | undefined,
+    extractResponse: (response: AxiosResponse) => T
+  ): Promise<T> {
+    const requestId = generateRequestId()
+    const logger = getLogger()
+    const startTime = Date.now()
+
+    const config = this.buildRequestConfig(method, path, data, options)
+    const maxRetries = options?.retries ?? this.retries
+    let lastError: Error | null = null
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        logRequest(logger, method, path, requestId)
+        const response = await this.client.request(config)
+        logRequest(logger, method, path, requestId, Date.now() - startTime)
+        return extractResponse(response)
+      } catch (error) {
+        const durationMs = Date.now() - startTime
+        lastError = this.handleRequestError<T>(error, config)
+
+        if (axios.isAxiosError(error) && error.response) {
+          logApiError(logger, lastError.message, error.response.status, requestId, {
+            path,
+            method,
+          })
+        }
+
+        if (lastError instanceof AuthenticationError) {
+          throw lastError
+        }
+
+        if (this.shouldRetry(lastError, attempt, maxRetries)) {
+          const delay = getRetryDelay(attempt)
+          logger.warn(`Request failed, retrying in ${delay}ms`, {
+            requestId,
+            attempt: attempt + 1,
+            maxRetries,
+            operation: 'retry',
+          })
+          await sleep(delay)
+          continue
+        }
+
+        logger.error(`Request failed after ${attempt + 1} attempts`, {
+          requestId,
+          durationMs,
+          operation: 'request_failed',
+        })
+        throw lastError
+      }
+    }
+
+    throw lastError ?? new Error('Request failed')
   }
 
   /**
@@ -252,98 +318,56 @@ export class SimApiClient {
     data?: unknown,
     options?: RequestOptions
   ): Promise<T> {
-    const requestId = generateRequestId();
-    const logger = getLogger();
-    const startTime = Date.now();
+    return this.executeRequest(method, path, data, options, (response) =>
+      this.processResponse(response as AxiosResponse<ApiResponse<T>>)
+    )
+  }
 
-    const config = this.buildRequestConfig(method, path, data, options);
-    const maxRetries = options?.retries ?? this.retries;
-    let lastError: Error | null = null;
-
-    // Retry loop with exponential backoff
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        logRequest(logger, method, path, requestId);
-        const response: AxiosResponse<ApiResponse<T>> = await this.client.request(config);
-        logRequest(logger, method, path, requestId, Date.now() - startTime);
-        return this.processResponse(response);
-      } catch (error) {
-        const durationMs = Date.now() - startTime;
-        lastError = this.handleRequestError<T>(error, config);
-
-        // Log API errors with HTTP status if available
-        if (axios.isAxiosError(error) && error.response) {
-          logApiError(logger, lastError.message, error.response.status, requestId, {
-            path,
-            method,
-          });
-        }
-
-        // Throw immediately for non-retryable errors
-        if (lastError instanceof AuthenticationError) {
-          throw lastError;
-        }
-
-        // Retry if applicable
-        if (this.shouldRetry(lastError, attempt, maxRetries)) {
-          const delay = getRetryDelay(attempt);
-          logger.warn(`Request failed, retrying in ${delay}ms`, {
-            requestId,
-            attempt: attempt + 1,
-            maxRetries,
-            operation: 'retry',
-          });
-          await sleep(delay);
-          continue;
-        }
-
-        // Max retries exceeded or non-retryable error
-        logger.error(`Request failed after ${attempt + 1} attempts`, {
-          requestId,
-          durationMs,
-          operation: 'request_failed',
-        });
-        throw lastError;
-      }
-    }
-
-    // This should never be reached, but TypeScript needs it
-    throw lastError ?? new Error('Request failed');
+  /**
+   * Make an HTTP request and return the raw response body.
+   */
+  async requestRaw<T>(
+    method: HttpMethod,
+    path: string,
+    data?: unknown,
+    options?: RequestOptions
+  ): Promise<T> {
+    return this.executeRequest(method, path, data, options, (response) => response.data as T)
   }
 
   /**
    * Convenience method for GET requests
    */
   async get<T>(path: string, params?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>('GET', path, params, options);
+    return this.request<T>('GET', path, params, options)
   }
 
   /**
    * Convenience method for POST requests
    */
   async post<T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>('POST', path, data, options);
+    return this.request<T>('POST', path, data, options)
   }
 
   /**
    * Convenience method for PUT requests
    */
   async put<T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>('PUT', path, data, options);
+    return this.request<T>('PUT', path, data, options)
   }
 
   /**
    * Convenience method for PATCH requests
    */
   async patch<T>(path: string, data?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>('PATCH', path, data, options);
+    return this.request<T>('PATCH', path, data, options)
   }
 
   /**
    * Convenience method for DELETE requests
    */
   async delete<T>(path: string, params?: unknown, options?: RequestOptions): Promise<T> {
-    return this.request<T>('DELETE', path, params, options);
+    return this.request<T>('DELETE', path, params, options)
   }
 
   // ==========================================
@@ -357,29 +381,29 @@ export class SimApiClient {
    * @returns Array of workflows
    */
   async listWorkflows(params?: {
-    workspaceId?: string;
-    limit?: number;
-    offset?: number;
+    workspaceId?: string
+    limit?: number
+    offset?: number
   }): Promise<Workflow[]> {
-    const queryParams: Record<string, string | number> = {};
+    const queryParams: Record<string, string | number> = {}
 
     if (params?.workspaceId) {
-      queryParams.workspaceId = params.workspaceId;
+      queryParams.workspaceId = params.workspaceId
     }
     if (params?.limit !== undefined) {
-      queryParams.limit = params.limit;
+      queryParams.limit = params.limit
     }
     if (params?.offset !== undefined) {
-      queryParams.offset = params.offset;
+      queryParams.offset = params.offset
     }
 
     // get() auto-unwraps { data: ... } response
     const workflows = await this.get<Workflow[]>(
       '/api/workflows',
       Object.keys(queryParams).length > 0 ? queryParams : undefined
-    );
+    )
 
-    return Array.isArray(workflows) ? workflows : [];
+    return Array.isArray(workflows) ? workflows : []
   }
 
   /**
@@ -390,15 +414,15 @@ export class SimApiClient {
    */
   async getWorkflow(workflowId: string): Promise<WorkflowWithBlocks> {
     // get() auto-unwraps { data: ... } response, so wf is the workflow object directly
-    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`);
+    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`)
 
     // User API returns normalized state (blocks as record, edges array) under `state`.
     // Extract and flatten blocks/edges to top level, exclude state from result
-    const { state, ...workflowMeta } = wf;
-    const blocks = Object.values((state?.blocks ?? {}) as Record<string, unknown>);
-    const edges = (state?.edges ?? []) as unknown[];
+    const { state, ...workflowMeta } = wf
+    const blocks = Object.values((state?.blocks ?? {}) as Record<string, unknown>)
+    const edges = (state?.edges ?? []) as unknown[]
 
-    return { ...workflowMeta, blocks, edges } as WorkflowWithBlocks;
+    return { ...workflowMeta, blocks, edges } as WorkflowWithBlocks
   }
 
   /**
@@ -408,15 +432,15 @@ export class SimApiClient {
    * @returns Newly created workflow
    */
   async createWorkflow(data: {
-    name: string;
-    description?: string;
-    workspaceId: string;
-    color?: string;
-    folderId?: string;
-    sortOrder?: number;
+    name: string
+    description?: string
+    workspaceId: string
+    color?: string
+    folderId?: string
+    sortOrder?: number
   }): Promise<Workflow> {
     // post() auto-unwraps { data: ... } response
-    return await this.post<Workflow>('/api/workflows', data);
+    return await this.post<Workflow>('/api/workflows', data)
   }
 
   /**
@@ -431,23 +455,23 @@ export class SimApiClient {
     data: { name?: string; description?: string }
   ): Promise<Workflow> {
     // put() auto-unwraps { data: ... } response
-    return await this.put<Workflow>(`/api/workflows/${workflowId}`, data);
+    return await this.put<Workflow>(`/api/workflows/${workflowId}`, data)
   }
 
   async getWorkflowStatus(workflowId: string): Promise<WorkflowStatusResult> {
-    return this.get<WorkflowStatusResult>(`/api/workflows/${workflowId}/status`);
+    return this.get<WorkflowStatusResult>(`/api/workflows/${workflowId}/status`)
   }
 
   async getDeployedWorkflowState(workflowId: string): Promise<DeployedWorkflowStateResult> {
-    return this.get<DeployedWorkflowStateResult>(`/api/workflows/${workflowId}/deployed`);
+    return this.get<DeployedWorkflowStateResult>(`/api/workflows/${workflowId}/deployed`)
   }
 
   async deployWorkflow(workflowId: string): Promise<WorkflowDeploymentResult> {
-    return this.post<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`);
+    return this.post<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`)
   }
 
   async undeployWorkflow(workflowId: string): Promise<WorkflowDeploymentResult> {
-    return this.delete<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`);
+    return this.delete<WorkflowDeploymentResult>(`/api/workflows/${workflowId}/deploy`)
   }
 
   async listDeploymentVersions(workflowId: string): Promise<DeploymentVersionListResult> {
@@ -455,7 +479,7 @@ export class SimApiClient {
       `/api/workflows/${workflowId}/deployments`,
       undefined,
       DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
-    );
+    )
   }
 
   async getDeploymentVersion(
@@ -466,7 +490,7 @@ export class SimApiClient {
       `/api/workflows/${workflowId}/deployments/${version}`,
       undefined,
       DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
-    );
+    )
   }
 
   async activateDeploymentVersion(
@@ -477,7 +501,7 @@ export class SimApiClient {
       `/api/workflows/${workflowId}/deployments/${version}`,
       { isActive: true },
       DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
-    );
+    )
   }
 
   async revertWorkflowToDeploymentVersion(
@@ -488,28 +512,28 @@ export class SimApiClient {
       `/api/workflows/${workflowId}/deployments/${version}/revert`,
       undefined,
       DEPLOYMENT_VERSION_LIFECYCLE_REQUEST_OPTIONS
-    );
+    )
   }
 
   async deleteWorkflow(options: {
-    workflowId: string;
-    checkTemplates?: boolean;
-    templateAction?: 'delete' | 'orphan';
+    workflowId: string
+    checkTemplates?: boolean
+    templateAction?: 'delete' | 'orphan'
   }): Promise<WorkflowDeleteCheckResult | undefined> {
-    const query: Record<string, string> = {};
+    const query: Record<string, string> = {}
 
     if (options.checkTemplates) {
-      query['check-templates'] = 'true';
+      query['check-templates'] = 'true'
     }
 
     if (options.templateAction) {
-      query.deleteTemplates = options.templateAction === 'delete' ? 'delete' : 'false';
+      query.deleteTemplates = options.templateAction === 'delete' ? 'delete' : 'false'
     }
 
     return this.delete<WorkflowDeleteCheckResult | undefined>(
       `/api/workflows/${options.workflowId}`,
       query
-    );
+    )
   }
 
   // ==========================================
@@ -540,9 +564,9 @@ export class SimApiClient {
       payload,
       timestamp: options?.timestamp,
       broadcast: options?.broadcast,
-    };
+    }
 
-    return this.post<OperationResponse>(`/api/workflows/${workflowId}/operations`, request);
+    return this.post<OperationResponse>(`/api/workflows/${workflowId}/operations`, request)
   }
 
   // ==========================================
@@ -561,17 +585,17 @@ export class SimApiClient {
     workflowId: string,
     blocks: Array<Record<string, unknown>>,
     edges?: Array<{
-      id: string;
-      source: string;
-      target: string;
-      sourceHandle?: string | null;
-      targetHandle?: string | null;
-      type?: string;
+      id: string
+      source: string
+      target: string
+      sourceHandle?: string | null
+      targetHandle?: string | null
+      type?: string
     }>,
     options?: {
-      loops?: Record<string, unknown>;
-      parallels?: Record<string, unknown>;
-      subBlockValues?: Record<string, Record<string, unknown>>;
+      loops?: Record<string, unknown>
+      parallels?: Record<string, unknown>
+      subBlockValues?: Record<string, Record<string, unknown>>
     }
   ): Promise<OperationResponse> {
     return this.workflowOperation(workflowId, 'batch-add-blocks', 'blocks', {
@@ -580,7 +604,7 @@ export class SimApiClient {
       loops: options?.loops,
       parallels: options?.parallels,
       subBlockValues: options?.subBlockValues,
-    });
+    })
   }
 
   /**
@@ -593,7 +617,7 @@ export class SimApiClient {
   async removeBlocks(workflowId: string, blockIds: string[]): Promise<OperationResponse> {
     return this.workflowOperation(workflowId, 'batch-remove-blocks', 'blocks', {
       ids: blockIds,
-    });
+    })
   }
 
   /**
@@ -612,7 +636,7 @@ export class SimApiClient {
     return this.workflowOperation(workflowId, 'update-name', 'block', {
       id: blockId,
       name,
-    });
+    })
   }
 
   /**
@@ -631,7 +655,7 @@ export class SimApiClient {
     return this.workflowOperation(workflowId, 'toggle-enabled', 'block', {
       id: blockId,
       enabled,
-    });
+    })
   }
 
   /**
@@ -650,7 +674,7 @@ export class SimApiClient {
     return this.workflowOperation(workflowId, 'update-parent', 'block', {
       id: blockId,
       parentId,
-    });
+    })
   }
 
   /**
@@ -663,14 +687,14 @@ export class SimApiClient {
   async addEdgeOperation(
     workflowId: string,
     edge: {
-      id: string;
-      source: string;
-      target: string;
-      sourceHandle?: string | null;
-      targetHandle?: string | null;
+      id: string
+      source: string
+      target: string
+      sourceHandle?: string | null
+      targetHandle?: string | null
     }
   ): Promise<OperationResponse> {
-    return this.workflowOperation(workflowId, 'add', 'edge', edge);
+    return this.workflowOperation(workflowId, 'add', 'edge', edge)
   }
 
   /**
@@ -681,7 +705,7 @@ export class SimApiClient {
    * @returns Operation response
    */
   async removeEdgeOperation(workflowId: string, edgeId: string): Promise<OperationResponse> {
-    return this.workflowOperation(workflowId, 'remove', 'edge', { id: edgeId });
+    return this.workflowOperation(workflowId, 'remove', 'edge', { id: edgeId })
   }
 
   /**
@@ -695,9 +719,9 @@ export class SimApiClient {
     workflowId: string,
     state: Record<string, unknown>
   ): Promise<OperationResponse> {
-    return this.workflowOperation(workflowId, 'replace-state', 'workflow', {
-      state,
-    });
+    return this.put<OperationResponse>(`/api/workflows/${workflowId}/state`, state, {
+      retries: 0,
+    })
   }
 
   /**
@@ -710,16 +734,16 @@ export class SimApiClient {
   async addVariable(
     workflowId: string,
     variable: {
-      id: string;
-      name: string;
-      type: string;
-      value: unknown;
+      id: string
+      name: string
+      type: string
+      value: unknown
     }
   ): Promise<OperationResponse> {
     return this.workflowOperation(workflowId, 'add', 'variable', {
       ...variable,
       workflowId,
-    });
+    })
   }
 
   /**
@@ -732,7 +756,7 @@ export class SimApiClient {
   async removeVariable(workflowId: string, variableId: string): Promise<OperationResponse> {
     return this.workflowOperation(workflowId, 'remove', 'variable', {
       variableId,
-    });
+    })
   }
 
   /**
@@ -746,14 +770,14 @@ export class SimApiClient {
   async subflowOperation(
     workflowId: string,
     subflow: {
-      id: string;
-      type?: 'loop' | 'parallel';
-      config?: Record<string, unknown>;
+      id: string
+      type?: 'loop' | 'parallel'
+      config?: Record<string, unknown>
     }
   ): Promise<OperationResponse> {
     // Subflows in sim backend only use 'update' operation
     // NOTE: Subflows must already exist (created via addBlocks with type loop/parallel)
-    return this.workflowOperation(workflowId, 'update', 'subflow', subflow);
+    return this.workflowOperation(workflowId, 'update', 'subflow', subflow)
   }
 
   // ==========================================
@@ -770,47 +794,47 @@ export class SimApiClient {
   async executeWorkflow(
     workflowId: string,
     options?: {
-      input?: Record<string, unknown>;
-      triggerType?: string;
-      useDraftState?: boolean;
-      stopAfterBlockId?: string;
+      input?: Record<string, unknown>
+      triggerType?: string
+      useDraftState?: boolean
+      stopAfterBlockId?: string
       runFromBlock?: {
-        startBlockId: string;
-        executionId?: string;
-      };
+        startBlockId: string
+        executionId?: string
+      }
     }
   ): Promise<{
-    success: boolean;
-    executionId?: string;
-    output?: unknown;
-    error?: string;
+    success: boolean
+    executionId?: string
+    output?: unknown
+    error?: string
     metadata?: {
-      duration?: number;
-      startTime?: string;
-      endTime?: string;
-    };
+      duration?: number
+      startTime?: string
+      endTime?: string
+    }
   }> {
-    const body: Record<string, unknown> = {};
+    const body: Record<string, unknown> = {}
 
     if (options?.input) {
-      body.input = options.input;
+      body.input = options.input
     }
     if (options?.triggerType) {
-      body.triggerType = options.triggerType;
+      body.triggerType = options.triggerType
     }
     if (options?.useDraftState !== undefined) {
-      body.useDraftState = options.useDraftState;
+      body.useDraftState = options.useDraftState
     }
     if (options?.stopAfterBlockId) {
-      body.stopAfterBlockId = options.stopAfterBlockId;
+      body.stopAfterBlockId = options.stopAfterBlockId
     }
     if (options?.runFromBlock) {
-      body.runFromBlock = options.runFromBlock;
+      body.runFromBlock = options.runFromBlock
     }
 
     return this.post(`/api/workflows/${workflowId}/execute`, body, {
       timeout: 120000, // Workflow execution may take longer
-    });
+    })
   }
 
   /**
@@ -824,11 +848,11 @@ export class SimApiClient {
     workflowId: string,
     executionId: string
   ): Promise<{
-    success: boolean;
-    executionId: string;
-    redisAvailable?: boolean;
+    success: boolean
+    executionId: string
+    redisAvailable?: boolean
   }> {
-    return this.post(`/api/workflows/${workflowId}/executions/${executionId}/cancel`);
+    return this.post(`/api/workflows/${workflowId}/executions/${executionId}/cancel`)
   }
 
   // ==========================================
@@ -842,67 +866,67 @@ export class SimApiClient {
    * @returns Array of execution logs with pagination info
    */
   async getLogs(params: {
-    workspaceId: string;
-    workflowId?: string;
-    executionId?: string;
-    level?: 'info' | 'error';
-    startDate?: string;
-    endDate?: string;
-    minDurationMs?: number;
-    maxDurationMs?: number;
-    minCost?: number;
-    maxCost?: number;
-    trigger?: string;
-    limit?: number;
-    cursor?: string;
-    order?: 'desc' | 'asc';
-    details?: 'basic' | 'full';
-    includeTraceSpans?: boolean;
-    includeFinalOutput?: boolean;
+    workspaceId: string
+    workflowId?: string
+    executionId?: string
+    level?: 'info' | 'error'
+    startDate?: string
+    endDate?: string
+    minDurationMs?: number
+    maxDurationMs?: number
+    minCost?: number
+    maxCost?: number
+    trigger?: string
+    limit?: number
+    cursor?: string
+    order?: 'desc' | 'asc'
+    details?: 'basic' | 'full'
+    includeTraceSpans?: boolean
+    includeFinalOutput?: boolean
   }): Promise<{
-    data: Array<Record<string, unknown>>;
-    nextCursor?: string;
-    limits?: Record<string, unknown>;
+    data: Array<Record<string, unknown>>
+    nextCursor?: string
+    limits?: Record<string, unknown>
   }> {
     const queryParams: Record<string, string | number | boolean> = {
       workspaceId: params.workspaceId,
-    };
+    }
 
-    setQueryParamIfDefined(queryParams, 'workflowIds', params.workflowId);
-    setQueryParamIfDefined(queryParams, 'executionId', params.executionId);
-    setQueryParamIfDefined(queryParams, 'level', params.level);
-    setQueryParamIfDefined(queryParams, 'startDate', params.startDate);
-    setQueryParamIfDefined(queryParams, 'endDate', params.endDate);
-    setQueryParamIfDefined(queryParams, 'minDurationMs', params.minDurationMs);
-    setQueryParamIfDefined(queryParams, 'maxDurationMs', params.maxDurationMs);
-    setQueryParamIfDefined(queryParams, 'minCost', params.minCost);
-    setQueryParamIfDefined(queryParams, 'maxCost', params.maxCost);
-    setQueryParamIfDefined(queryParams, 'triggers', params.trigger);
-    setQueryParamIfDefined(queryParams, 'limit', params.limit);
-    setQueryParamIfDefined(queryParams, 'cursor', params.cursor);
-    setQueryParamIfDefined(queryParams, 'order', params.order);
-    setQueryParamIfDefined(queryParams, 'details', params.details);
-    setQueryParamIfDefined(queryParams, 'includeTraceSpans', params.includeTraceSpans);
-    setQueryParamIfDefined(queryParams, 'includeFinalOutput', params.includeFinalOutput);
+    setQueryParamIfDefined(queryParams, 'workflowIds', params.workflowId)
+    setQueryParamIfDefined(queryParams, 'executionId', params.executionId)
+    setQueryParamIfDefined(queryParams, 'level', params.level)
+    setQueryParamIfDefined(queryParams, 'startDate', params.startDate)
+    setQueryParamIfDefined(queryParams, 'endDate', params.endDate)
+    setQueryParamIfDefined(queryParams, 'minDurationMs', params.minDurationMs)
+    setQueryParamIfDefined(queryParams, 'maxDurationMs', params.maxDurationMs)
+    setQueryParamIfDefined(queryParams, 'minCost', params.minCost)
+    setQueryParamIfDefined(queryParams, 'maxCost', params.maxCost)
+    setQueryParamIfDefined(queryParams, 'triggers', params.trigger)
+    setQueryParamIfDefined(queryParams, 'limit', params.limit)
+    setQueryParamIfDefined(queryParams, 'cursor', params.cursor)
+    setQueryParamIfDefined(queryParams, 'order', params.order)
+    setQueryParamIfDefined(queryParams, 'details', params.details)
+    setQueryParamIfDefined(queryParams, 'includeTraceSpans', params.includeTraceSpans)
+    setQueryParamIfDefined(queryParams, 'includeFinalOutput', params.includeFinalOutput)
 
-    const result = await this.get<
+    const result = await this.requestRaw<
       | Array<Record<string, unknown>>
       | {
-          data: Array<Record<string, unknown>>;
-          nextCursor?: string;
-          limits?: Record<string, unknown>;
+          data?: Array<Record<string, unknown>>
+          nextCursor?: string
+          limits?: Record<string, unknown>
         }
-    >('/api/v1/logs', queryParams);
+    >('GET', '/api/v1/logs', queryParams)
 
     if (Array.isArray(result)) {
-      return { data: result };
+      return { data: result }
     }
 
     return {
       data: Array.isArray(result.data) ? result.data : [],
       nextCursor: result.nextCursor,
       limits: result.limits,
-    };
+    }
   }
 
   /**
@@ -912,13 +936,27 @@ export class SimApiClient {
    * @returns Full log detail with execution data, workflow context, and cost breakdown
    */
   async getLogDetail(logId: string): Promise<{
-    data: Record<string, unknown>;
-    limits?: Record<string, unknown>;
+    data: Record<string, unknown>
+    limits?: Record<string, unknown>
   }> {
-    return this.get<{
-      data: Record<string, unknown>;
-      limits?: Record<string, unknown>;
-    }>(`/api/v1/logs/${logId}`);
+    const result = await this.requestRaw<
+      | {
+          data?: Record<string, unknown>
+          limits?: Record<string, unknown>
+        }
+      | Record<string, unknown>
+    >('GET', `/api/v1/logs/${logId}`)
+
+    if (isRecord(result) && isRecord(result.data)) {
+      return {
+        data: result.data,
+        limits: isRecord(result.limits) ? result.limits : undefined,
+      }
+    }
+
+    return {
+      data: isRecord(result) ? result : {},
+    }
   }
 
   // ==========================================
@@ -933,7 +971,7 @@ export class SimApiClient {
    */
   async exportWorkflow(workflowId: string): Promise<WorkflowExportPayload> {
     // get() auto-unwraps { data: ... } response
-    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`);
+    const wf = await this.get<WorkflowApiResponse>(`/api/workflows/${workflowId}`)
 
     return {
       version: '1.0.0',
@@ -947,7 +985,7 @@ export class SimApiClient {
         folderId: wf.folderId ?? undefined,
       },
       state: wf.state,
-    } as WorkflowExportPayload;
+    } as WorkflowExportPayload
   }
 
   // ==========================================
@@ -961,25 +999,25 @@ export class SimApiClient {
    * @returns Array of custom tools
    */
   async listCustomTools(params?: {
-    workspaceId?: string;
-    workflowId?: string;
+    workspaceId?: string
+    workflowId?: string
   }): Promise<CustomTool[]> {
-    const queryParams: Record<string, string> = {};
+    const queryParams: Record<string, string> = {}
 
     if (params?.workspaceId) {
-      queryParams.workspaceId = params.workspaceId;
+      queryParams.workspaceId = params.workspaceId
     }
     if (params?.workflowId) {
-      queryParams.workflowId = params.workflowId;
+      queryParams.workflowId = params.workflowId
     }
 
     // get() auto-unwraps { data: ... } response
     const tools = await this.get<CustomTool[]>(
       '/api/tools/custom',
       Object.keys(queryParams).length > 0 ? queryParams : undefined
-    );
+    )
 
-    return Array.isArray(tools) ? tools : [];
+    return Array.isArray(tools) ? tools : []
   }
 
   /**
@@ -989,19 +1027,19 @@ export class SimApiClient {
    * @returns Array of all custom tools in the workspace after upsert
    */
   async upsertCustomTools(params: {
-    workspaceId: string;
-    tools: CustomToolInput[];
+    workspaceId: string
+    tools: CustomToolInput[]
   }): Promise<CustomTool[]> {
     const response = await this.post<CustomTool[] | { data: CustomTool[] }>('/api/tools/custom', {
       workspaceId: params.workspaceId,
       tools: params.tools,
-    });
+    })
 
     // Response may be wrapped in { success, data } format or be a direct array
     if (Array.isArray(response)) {
-      return response;
+      return response
     }
-    return response.data ?? [];
+    return response.data ?? []
   }
 
   // ==========================================
@@ -1017,12 +1055,12 @@ export class SimApiClient {
   async listSkills(params: { workspaceId: string }): Promise<Skill[]> {
     const queryParams: Record<string, string> = {
       workspaceId: params.workspaceId,
-    };
+    }
 
     // get() auto-unwraps { data: ... } response
-    const skills = await this.get<Skill[]>('/api/skills', queryParams);
+    const skills = await this.get<Skill[]>('/api/skills', queryParams)
 
-    return Array.isArray(skills) ? skills : [];
+    return Array.isArray(skills) ? skills : []
   }
 
   /**
@@ -1031,20 +1069,17 @@ export class SimApiClient {
    * @param params - Skills data and workspace ID
    * @returns Array of created/updated skills
    */
-  async upsertSkills(params: {
-    workspaceId: string;
-    skills: SkillInput[];
-  }): Promise<Skill[]> {
+  async upsertSkills(params: { workspaceId: string; skills: SkillInput[] }): Promise<Skill[]> {
     const response = await this.post<Skill[] | { data: Skill[] }>('/api/skills', {
       workspaceId: params.workspaceId,
       skills: params.skills,
-    });
+    })
 
     // Response may be wrapped in { success, data } format or be a direct array
     if (Array.isArray(response)) {
-      return response;
+      return response
     }
-    return response.data ?? [];
+    return response.data ?? []
   }
 
   /**
@@ -1056,7 +1091,7 @@ export class SimApiClient {
     await this.delete<void>('/api/skills', {
       id: params.id,
       workspaceId: params.workspaceId,
-    });
+    })
   }
 }
 
@@ -1064,5 +1099,5 @@ export class SimApiClient {
  * Factory function to create a SimApiClient instance
  */
 export function createSimApiClient(config: SimApiClientConfig): SimApiClient {
-  return new SimApiClient(config);
+  return new SimApiClient(config)
 }
