@@ -144,6 +144,30 @@ export interface GetExecutionLogsOutput {
   limits?: Record<string, unknown>;
 }
 
+type ExecutionLogsListResult =
+  | Array<Record<string, unknown>>
+  | {
+      data?: Array<Record<string, unknown>>;
+      nextCursor?: string;
+      limits?: Record<string, unknown>;
+    };
+
+function normalizeExecutionLogsListResult(result: ExecutionLogsListResult): {
+  data: Array<Record<string, unknown>>;
+  nextCursor?: string;
+  limits?: Record<string, unknown>;
+} {
+  if (Array.isArray(result)) {
+    return { data: result };
+  }
+
+  return {
+    data: Array.isArray(result.data) ? result.data : [],
+    nextCursor: result.nextCursor,
+    limits: result.limits,
+  };
+}
+
 /**
  * List and filter workflow execution logs
  *
@@ -169,8 +193,8 @@ export async function getExecutionLogs(
       level: input.level,
     });
 
-    const result = await client.getLogs(input);
-    const logs = Array.isArray(result.data) ? result.data : [];
+    const result = normalizeExecutionLogsListResult(await client.getLogs(input));
+    const logs = result.data;
 
     logger.debug('Execution logs fetched', {
       operation: 'get_execution_logs',

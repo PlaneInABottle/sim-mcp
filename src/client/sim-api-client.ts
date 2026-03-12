@@ -885,11 +885,24 @@ export class SimApiClient {
     setQueryParamIfDefined(queryParams, 'includeTraceSpans', params.includeTraceSpans);
     setQueryParamIfDefined(queryParams, 'includeFinalOutput', params.includeFinalOutput);
 
-    return this.get<{
-      data: Array<Record<string, unknown>>;
-      nextCursor?: string;
-      limits?: Record<string, unknown>;
-    }>('/api/v1/logs', queryParams);
+    const result = await this.get<
+      | Array<Record<string, unknown>>
+      | {
+          data: Array<Record<string, unknown>>;
+          nextCursor?: string;
+          limits?: Record<string, unknown>;
+        }
+    >('/api/v1/logs', queryParams);
+
+    if (Array.isArray(result)) {
+      return { data: result };
+    }
+
+    return {
+      data: Array.isArray(result.data) ? result.data : [],
+      nextCursor: result.nextCursor,
+      limits: result.limits,
+    };
   }
 
   /**
