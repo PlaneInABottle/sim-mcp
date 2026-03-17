@@ -727,6 +727,40 @@ export const mockWorkflowValidationValidTargetHandleArray = createWorkflowValida
   )
 );
 
+export const mockWorkflowValidationMalformedOutputsArrayDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-malformed-outputs-array-declaration',
+    createHandleValidationState(
+      [{ id: 'edge-1', source: 'block-1', target: 'block-2', sourceHandle: 'main' }],
+      {
+        'block-1': {
+          id: 'block-1',
+          type: 'api_trigger',
+          enabled: true,
+          outputs: [{ name: 'main' }],
+        },
+        'block-2': { id: 'block-2', type: 'agent', enabled: true },
+      }
+    )
+  );
+
+export const mockWorkflowValidationMalformedOutputsContainerDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-malformed-outputs-container-declaration',
+    createHandleValidationState(
+      [{ id: 'edge-1', source: 'block-1', target: 'block-2', sourceHandle: 'main' }],
+      {
+        'block-1': {
+          id: 'block-1',
+          type: 'api_trigger',
+          enabled: true,
+          outputs: 'main',
+        },
+        'block-2': { id: 'block-2', type: 'agent', enabled: true },
+      }
+    )
+  );
+
 export const mockWorkflowValidationBrokenSourceHandle = createWorkflowValidationWorkflow(
   'wf-broken-source-handle',
   createHandleValidationState(
@@ -742,6 +776,40 @@ export const mockWorkflowValidationBrokenSourceHandle = createWorkflowValidation
     }
   )
 );
+
+export const mockWorkflowValidationMalformedInputsArrayDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-malformed-inputs-array-declaration',
+    createHandleValidationState(
+      [{ id: 'edge-1', source: 'block-1', target: 'block-2', targetHandle: 'prompt' }],
+      {
+        'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+        'block-2': {
+          id: 'block-2',
+          type: 'agent',
+          enabled: true,
+          inputs: [{ name: 'prompt' }],
+        },
+      }
+    )
+  );
+
+export const mockWorkflowValidationMalformedInputsContainerDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-malformed-inputs-container-declaration',
+    createHandleValidationState(
+      [{ id: 'edge-1', source: 'block-1', target: 'block-2', targetHandle: 'prompt' }],
+      {
+        'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+        'block-2': {
+          id: 'block-2',
+          type: 'agent',
+          enabled: true,
+          inputs: { prompt: {} },
+        },
+      }
+    )
+  );
 
 export const mockWorkflowValidationBrokenTargetHandle = createWorkflowValidationWorkflow(
   'wf-broken-target-handle',
@@ -814,6 +882,90 @@ export const mockWorkflowValidationBrokenEndpointWithHandle = createWorkflowVali
   )
 );
 
+export const mockWorkflowValidationDuplicateMalformedOutputsDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-duplicate-malformed-outputs-declaration',
+    createHandleValidationState(
+      [
+        { id: 'edge-1', source: 'block-1', target: 'block-2', sourceHandle: 'main' },
+        { id: 'edge-2', source: 'block-1', target: 'block-3', sourceHandle: 'backup' },
+      ],
+      {
+        'block-1': {
+          id: 'block-1',
+          type: 'api_trigger',
+          enabled: true,
+          outputs: [{ name: 'main' }],
+        },
+        'block-2': { id: 'block-2', type: 'agent', enabled: true },
+        'block-3': { id: 'block-3', type: 'agent', enabled: true },
+      }
+    )
+  );
+
+export const mockWorkflowValidationDuplicateMalformedInputsDeclaration =
+  createWorkflowValidationWorkflow(
+    'wf-duplicate-malformed-inputs-declaration',
+    createHandleValidationState(
+      [
+        { id: 'edge-1', source: 'block-1', target: 'block-2', targetHandle: 'prompt' },
+        { id: 'edge-2', source: 'block-3', target: 'block-2', targetHandle: 'context' },
+      ],
+      {
+        'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+        'block-2': {
+          id: 'block-2',
+          type: 'agent',
+          enabled: true,
+          inputs: [{ name: 'prompt' }],
+        },
+        'block-3': { id: 'block-3', type: 'api_trigger', enabled: true },
+      }
+    )
+  );
+
+export const mockWorkflowValidationImplicitHandles = createWorkflowValidationWorkflow(
+  'wf-implicit-handles',
+  createHandleValidationState(
+    [
+      { id: 'edge-1', source: 'block-1', target: 'block-2', sourceHandle: 'source' },
+      { id: 'edge-2', source: 'block-1', target: 'block-3', sourceHandle: 'error' },
+      {
+        id: 'edge-3',
+        source: 'block-4',
+        target: 'block-5',
+        sourceHandle: 'condition-some-block-else',
+      },
+      {
+        id: 'edge-4',
+        source: 'block-6',
+        target: 'block-7',
+        sourceHandle: 'router-some-block-path-a',
+      },
+      {
+        id: 'edge-5',
+        source: 'block-8',
+        target: 'block-9',
+        sourceHandle: 'switch-some-block-case-1',
+      },
+      { id: 'edge-6', source: 'block-10', target: 'block-11', targetHandle: 'target' },
+    ],
+    {
+      'block-1': { id: 'block-1', type: 'agent', enabled: true, outputs: {} },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+      'block-3': { id: 'block-3', type: 'agent', enabled: true },
+      'block-4': { id: 'block-4', type: 'condition', enabled: true, outputs: {} },
+      'block-5': { id: 'block-5', type: 'agent', enabled: true },
+      'block-6': { id: 'block-6', type: 'router', enabled: true, outputs: {} },
+      'block-7': { id: 'block-7', type: 'agent', enabled: true },
+      'block-8': { id: 'block-8', type: 'switch', enabled: true, outputs: {} },
+      'block-9': { id: 'block-9', type: 'agent', enabled: true },
+      'block-10': { id: 'block-10', type: 'api_trigger', enabled: true },
+      'block-11': { id: 'block-11', type: 'agent', enabled: true, inputs: [] },
+    }
+  )
+);
+
 export const mockWorkflowValidationMap = {
   'wf-123': mockWorkflowValidationWorkflow,
   'wf-no-state': mockWorkflowValidationNoState,
@@ -837,11 +989,22 @@ export const mockWorkflowValidationMap = {
   'wf-valid-source-handle-array': mockWorkflowValidationValidSourceHandleArray,
   'wf-valid-source-handle-record': mockWorkflowValidationValidSourceHandleRecord,
   'wf-valid-target-handle-array': mockWorkflowValidationValidTargetHandleArray,
+  'wf-malformed-outputs-array-declaration': mockWorkflowValidationMalformedOutputsArrayDeclaration,
+  'wf-malformed-outputs-container-declaration':
+    mockWorkflowValidationMalformedOutputsContainerDeclaration,
+  'wf-malformed-inputs-array-declaration': mockWorkflowValidationMalformedInputsArrayDeclaration,
+  'wf-malformed-inputs-container-declaration':
+    mockWorkflowValidationMalformedInputsContainerDeclaration,
   'wf-broken-source-handle': mockWorkflowValidationBrokenSourceHandle,
   'wf-broken-target-handle': mockWorkflowValidationBrokenTargetHandle,
   'wf-declaration-absent-handle': mockWorkflowValidationDeclarationAbsentHandle,
   'wf-loop-handle-skip': mockWorkflowValidationLoopHandleSkip,
   'wf-broken-endpoint-with-handle': mockWorkflowValidationBrokenEndpointWithHandle,
+  'wf-duplicate-malformed-outputs-declaration':
+    mockWorkflowValidationDuplicateMalformedOutputsDeclaration,
+  'wf-duplicate-malformed-inputs-declaration':
+    mockWorkflowValidationDuplicateMalformedInputsDeclaration,
+  'wf-implicit-handles': mockWorkflowValidationImplicitHandles,
 } as const;
 
 /**

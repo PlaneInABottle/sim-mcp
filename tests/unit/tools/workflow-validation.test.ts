@@ -10,10 +10,17 @@ import {
   mockWorkflowValidationBrokenTargetHandle,
   mockWorkflowValidationDeclarationAbsentHandle,
   mockWorkflowValidationDisabledPath,
+  mockWorkflowValidationDuplicateMalformedInputsDeclaration,
+  mockWorkflowValidationDuplicateMalformedOutputsDeclaration,
+  mockWorkflowValidationImplicitHandles,
   mockWorkflowValidationIsolatedEnabledBlock,
   mockWorkflowValidationLoopHandleSkip,
   mockWorkflowValidationLoopTraversal,
   mockWorkflowValidationMalformedEntries,
+  mockWorkflowValidationMalformedInputsArrayDeclaration,
+  mockWorkflowValidationMalformedInputsContainerDeclaration,
+  mockWorkflowValidationMalformedOutputsArrayDeclaration,
+  mockWorkflowValidationMalformedOutputsContainerDeclaration,
   mockWorkflowValidationMalformedSourceHandle,
   mockWorkflowValidationMalformedTargetHandle,
   mockWorkflowValidationNoState,
@@ -157,6 +164,86 @@ describe('validateWorkflowDefinition', () => {
     );
   });
 
+  it('reports malformed outputs declarations as block-scoped errors and suppresses source broken-handle findings', () => {
+    const malformedArrayResult = validateWorkflowDefinition(
+      mockWorkflowValidationMalformedOutputsArrayDeclaration
+    );
+    const malformedContainerResult = validateWorkflowDefinition(
+      mockWorkflowValidationMalformedOutputsContainerDeclaration
+    );
+
+    expect(malformedArrayResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'block_outputs_declaration_malformed',
+          severity: 'error',
+          scope: 'block',
+          blockId: 'block-1',
+          message:
+            "Block 'block-1' has an invalid outputs declaration; expected an object record or an array of objects with string id values for source-handle validation.",
+        }),
+      ])
+    );
+    expect(malformedContainerResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'block_outputs_declaration_malformed',
+          severity: 'error',
+          scope: 'block',
+          blockId: 'block-1',
+          message:
+            "Block 'block-1' has an invalid outputs declaration; expected an object record or an array of objects with string id values for source-handle validation.",
+        }),
+      ])
+    );
+    expect(malformedArrayResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_source_handle'
+    );
+    expect(malformedContainerResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_source_handle'
+    );
+  });
+
+  it('reports malformed inputs declarations as block-scoped errors and suppresses target broken-handle findings', () => {
+    const malformedArrayResult = validateWorkflowDefinition(
+      mockWorkflowValidationMalformedInputsArrayDeclaration
+    );
+    const malformedContainerResult = validateWorkflowDefinition(
+      mockWorkflowValidationMalformedInputsContainerDeclaration
+    );
+
+    expect(malformedArrayResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'block_inputs_declaration_malformed',
+          severity: 'error',
+          scope: 'block',
+          blockId: 'block-2',
+          message:
+            "Block 'block-2' has an invalid inputs declaration; expected an array of objects with string id values for target-handle validation.",
+        }),
+      ])
+    );
+    expect(malformedContainerResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'block_inputs_declaration_malformed',
+          severity: 'error',
+          scope: 'block',
+          blockId: 'block-2',
+          message:
+            "Block 'block-2' has an invalid inputs declaration; expected an array of objects with string id values for target-handle validation.",
+        }),
+      ])
+    );
+    expect(malformedArrayResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_target_handle'
+    );
+    expect(malformedContainerResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_target_handle'
+    );
+  });
+
   it('reports broken explicit handles only when declarations are locally supported', () => {
     const brokenSourceResult = validateWorkflowDefinition(mockWorkflowValidationBrokenSourceHandle);
     const brokenTargetResult = validateWorkflowDefinition(mockWorkflowValidationBrokenTargetHandle);
@@ -205,6 +292,41 @@ describe('validateWorkflowDefinition', () => {
         }),
       ])
     );
+    expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_source_handle');
+    expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_target_handle');
+  });
+
+  it('deduplicates malformed declaration findings once per block field per run', () => {
+    const sourceResult = validateWorkflowDefinition(
+      mockWorkflowValidationDuplicateMalformedOutputsDeclaration
+    );
+    const targetResult = validateWorkflowDefinition(
+      mockWorkflowValidationDuplicateMalformedInputsDeclaration
+    );
+
+    expect(
+      sourceResult.errors.filter(
+        (finding) =>
+          finding.code === 'block_outputs_declaration_malformed' && finding.blockId === 'block-1'
+      )
+    ).toHaveLength(1);
+    expect(
+      targetResult.errors.filter(
+        (finding) =>
+          finding.code === 'block_inputs_declaration_malformed' && finding.blockId === 'block-2'
+      )
+    ).toHaveLength(1);
+    expect(sourceResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_source_handle'
+    );
+    expect(targetResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_target_handle'
+    );
+  });
+
+  it('ignores implicit source and target handles', () => {
+    const result = validateWorkflowDefinition(mockWorkflowValidationImplicitHandles);
+
     expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_source_handle');
     expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_target_handle');
   });

@@ -10,6 +10,8 @@ export type ValidationFindingCode =
   | 'workflow_edge_malformed'
   | 'edge_source_handle_malformed'
   | 'edge_target_handle_malformed'
+  | 'block_outputs_declaration_malformed'
+  | 'block_inputs_declaration_malformed'
   | 'unknown_block_type'
   | 'broken_edge_source'
   | 'broken_edge_target'
@@ -67,6 +69,11 @@ type ValidEdgeRecord = {
   targetHandle?: unknown;
 };
 
+type HandleDeclarationInspection =
+  | { status: 'absent' }
+  | { status: 'malformed' }
+  | { status: 'valid'; handles: Set<string> };
+
 const VALID_BLOCK_TYPES = new Set<string>(BlockTypeEnum.options);
 const ROOT_BLOCK_TYPES = new Set<string>([
   'api_trigger',
@@ -75,7 +82,12 @@ const ROOT_BLOCK_TYPES = new Set<string>([
   'manual_trigger',
   'chat_trigger',
   'input_trigger',
+  'start_trigger',
+  'generic_webhook',
 ]);
+const IMPLICIT_SOURCE_HANDLES = new Set<string>(['source', 'error']);
+const IMPLICIT_TARGET_HANDLES = new Set<string>(['target']);
+const DYNAMIC_SOURCE_HANDLE_PREFIXES = ['condition-', 'router-', 'switch-'];
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -101,42 +113,57 @@ function isValidHandleField(value: unknown): value is string | null {
   return typeof value === 'string' || value === null;
 }
 
-function extractHandleIdsFromArray(value: unknown): Set<string> | null {
+function isImplicitSourceHandle(handle: string): boolean {
+  return (
+    IMPLICIT_SOURCE_HANDLES.has(handle) ||
+    DYNAMIC_SOURCE_HANDLE_PREFIXES.some((prefix) => handle.startsWith(prefix))
+  );
+}
+
+function isImplicitTargetHandle(handle: string): boolean {
+  return IMPLICIT_TARGET_HANDLES.has(handle);
+}
+
+function inspectHandleIdsArray(value: unknown): HandleDeclarationInspection {
   if (!Array.isArray(value)) {
-    return null;
+    return { status: 'malformed' };
   }
 
   const handleIds = new Set<string>();
 
   for (const entry of value) {
     if (!isObjectRecord(entry) || typeof entry.id !== 'string') {
-      return null;
+      return { status: 'malformed' };
     }
 
     handleIds.add(entry.id);
   }
 
-  return handleIds;
+  return { status: 'valid', handles: handleIds };
 }
 
-function extractDeclaredSourceHandles(block: Record<string, unknown>): Set<string> | null {
+function inspectDeclaredSourceHandles(block: Record<string, unknown>): HandleDeclarationInspection {
+  if (!Object.prototype.hasOwnProperty.call(block, 'outputs')) {
+    return { status: 'absent' };
+  }
+
   if (Array.isArray(block.outputs)) {
-    return extractHandleIdsFromArray(block.outputs);
+    return inspectHandleIdsArray(block.outputs);
   }
 
   if (isObjectRecord(block.outputs)) {
-    return new Set(Object.keys(block.outputs));
+    return { status: 'valid', handles: new Set(Object.keys(block.outputs)) };
   }
 
-  return null;
+  return { status: 'malformed' };
 }
 
-function extractDeclaredTargetHandles(block: Record<string, unknown>): Set<string> | null {
-  if (!Array.isArray(block.inputs)) {
-    return null;
+function inspectDeclaredTargetHandles(block: Record<string, unknown>): HandleDeclarationInspection {
+  if (!Object.prototype.hasOwnProperty.call(block, 'inputs')) {
+    return { status: 'absent' };
   }
 
-  return extractHandleIdsFromArray(block.inputs);
+  return inspectHandleIdsArray(block.inputs);
 }
 
 function buildResult(
@@ -335,15 +362,37 @@ function collectBrokenHandleFindings(
   structuralNodeIds: Set<string>,
   errors: ValidationFinding[]
 ): void {
+  const reportedMalformedDeclarations = new Set<string>();
+
   for (const edge of edges) {
     const sourceBlock = validBlocks[edge.source];
     if (
       sourceBlock &&
       !structuralNodeIds.has(edge.source) &&
-      typeof edge.sourceHandle === 'string'
+      typeof edge.sourceHandle === 'string' &&
+      !isImplicitSourceHandle(edge.sourceHandle)
     ) {
-      const declaredSourceHandles = extractDeclaredSourceHandles(sourceBlock);
-      if (declaredSourceHandles && !declaredSourceHandles.has(edge.sourceHandle)) {
+      const declaredSourceHandles = inspectDeclaredSourceHandles(sourceBlock);
+      if (declaredSourceHandles.status === 'malformed') {
+        const malformedKey = `${edge.source}:outputs`;
+        if (!reportedMalformedDeclarations.has(malformedKey)) {
+          reportedMalformedDeclarations.add(malformedKey);
+          errors.push(
+            createFinding({
+              code: 'block_outputs_declaration_malformed',
+              severity: 'error',
+              scope: 'block',
+              message: `Block '${edge.source}' has an invalid outputs declaration; expected an object record or an array of objects with string id values for source-handle validation.`,
+              blockId: edge.source,
+            })
+          );
+        }
+      }
+
+      if (
+        declaredSourceHandles.status === 'valid' &&
+        !declaredSourceHandles.handles.has(edge.sourceHandle)
+      ) {
         errors.push(
           createFinding({
             code: 'broken_edge_source_handle',
@@ -362,10 +411,30 @@ function collectBrokenHandleFindings(
     if (
       targetBlock &&
       !structuralNodeIds.has(edge.target) &&
-      typeof edge.targetHandle === 'string'
+      typeof edge.targetHandle === 'string' &&
+      !isImplicitTargetHandle(edge.targetHandle)
     ) {
-      const declaredTargetHandles = extractDeclaredTargetHandles(targetBlock);
-      if (declaredTargetHandles && !declaredTargetHandles.has(edge.targetHandle)) {
+      const declaredTargetHandles = inspectDeclaredTargetHandles(targetBlock);
+      if (declaredTargetHandles.status === 'malformed') {
+        const malformedKey = `${edge.target}:inputs`;
+        if (!reportedMalformedDeclarations.has(malformedKey)) {
+          reportedMalformedDeclarations.add(malformedKey);
+          errors.push(
+            createFinding({
+              code: 'block_inputs_declaration_malformed',
+              severity: 'error',
+              scope: 'block',
+              message: `Block '${edge.target}' has an invalid inputs declaration; expected an array of objects with string id values for target-handle validation.`,
+              blockId: edge.target,
+            })
+          );
+        }
+      }
+
+      if (
+        declaredTargetHandles.status === 'valid' &&
+        !declaredTargetHandles.handles.has(edge.targetHandle)
+      ) {
         errors.push(
           createFinding({
             code: 'broken_edge_target_handle',

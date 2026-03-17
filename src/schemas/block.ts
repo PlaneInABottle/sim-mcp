@@ -19,6 +19,8 @@ export const BlockTypeEnum = z.enum([
   'manual_trigger',
   'chat_trigger',
   'input_trigger',
+  'start_trigger',
+  'generic_webhook',
 
   // AI/ML
   'agent',
@@ -51,6 +53,7 @@ export const BlockTypeEnum = z.enum([
   'pinecone',
   'qdrant',
   'redis',
+  'upstash',
 
   // Logic
   'condition',
@@ -75,6 +78,8 @@ export const BlockTypeEnum = z.enum([
   'delay',
   'merge',
   'split',
+  'variables',
+  'workflow_input',
 
   // Generic for custom blocks
   'custom',
