@@ -410,6 +410,16 @@ export interface WorkflowState {
 }
 
 /**
+ * Raw workflow payload used by validation reads.
+ * Keeps state untyped so malformed persisted shapes can be inspected safely.
+ */
+export interface WorkflowValidationWorkflow extends Workflow {
+  color?: string;
+  folderId?: string | null;
+  state?: unknown;
+}
+
+/**
  * Workflow export payload returned by export endpoint
  */
 export interface WorkflowExportPayload {

@@ -17,6 +17,7 @@ import type {
   OperationResponse,
   RevertDeploymentVersionResult,
   WorkflowExportPayload,
+  WorkflowValidationWorkflow,
 } from '../../src/client/types.js';
 import type { CustomTool } from '../../src/schemas/custom-tools.js';
 import type { Skill } from '../../src/schemas/skills.js';
@@ -362,6 +363,280 @@ export const mockExportPayload: WorkflowExportPayload = {
   },
 };
 
+const mockWorkflowValidationBase = {
+  id: 'wf-123',
+  userId: 'user-456',
+  workspaceId: 'ws-789',
+  name: 'Test Workflow',
+  description: 'A test workflow for unit testing',
+  isDeployed: false,
+  createdAt: '2024-01-15T10:00:00Z',
+  updatedAt: '2024-01-15T10:00:00Z',
+};
+
+export const mockWorkflowValidationWorkflow: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  state: {
+    blocks: {
+      'block-1': {
+        id: 'block-1',
+        type: 'api_trigger',
+        name: 'API Trigger',
+        enabled: true,
+      },
+      'block-2': {
+        id: 'block-2',
+        type: 'agent',
+        name: 'Agent',
+        enabled: true,
+        config: { prompt: 'Use {{message}}' },
+      },
+    },
+    edges: [{ id: 'edge-1', source: 'block-1', target: 'block-2' }],
+    loops: {},
+    parallels: {},
+    variables: [{ id: 'var-1', name: 'message', type: 'string', value: 'hello' }],
+  },
+};
+
+export const mockWorkflowValidationNoState: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-no-state',
+};
+
+export const mockWorkflowValidationBadBlocks: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-bad-blocks',
+  state: {
+    blocks: [],
+    edges: [],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationBadEdges: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-bad-edges',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+    },
+    edges: {},
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationMalformedEntries: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-malformed-entries',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': null,
+    },
+    edges: [null, { id: 'edge-1', source: 'block-1' }],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationUnknownType: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-unknown-type',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'mystery', enabled: false },
+    },
+    edges: [],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationBrokenEdges: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-broken-edges',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    },
+    edges: [
+      { id: 'edge-source', source: 'missing-source', target: 'block-2' },
+      { id: 'edge-target', source: 'block-1', target: 'missing-target' },
+    ],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationIsolatedEnabledBlock: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-isolated-enabled',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+      'block-3': { id: 'block-3', type: 'agent', enabled: true },
+    },
+    edges: [{ id: 'edge-1', source: 'block-1', target: 'block-2' }],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationDisabledPath: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-disabled-path',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: false },
+      'block-3': { id: 'block-3', type: 'agent', enabled: true },
+      'block-4': { id: 'block-4', type: 'agent', enabled: false },
+    },
+    edges: [
+      { id: 'edge-1', source: 'block-1', target: 'block-2' },
+      { id: 'edge-2', source: 'block-2', target: 'block-3' },
+    ],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationUnreachableBranch: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-unreachable-branch',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+      'block-3': { id: 'block-3', type: 'agent', enabled: true },
+      'block-4': { id: 'block-4', type: 'agent', enabled: true },
+    },
+    edges: [
+      { id: 'edge-1', source: 'block-1', target: 'block-2' },
+      { id: 'edge-2', source: 'block-3', target: 'block-4' },
+    ],
+    loops: {},
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationUnusedVariable: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-unused-variable',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true, config: { prompt: 'Hello world' } },
+    },
+    edges: [{ id: 'edge-1', source: 'block-1', target: 'block-2' }],
+    loops: {},
+    parallels: {},
+    variables: [{ id: 'var-1', name: 'count', type: 'number', value: 1 }],
+  },
+};
+
+export const mockWorkflowValidationVariableTokenMatch: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationWorkflow,
+  id: 'wf-token-match',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': {
+        id: 'block-2',
+        type: 'agent',
+        enabled: true,
+        config: { prompt: 'Hello {{count}}' },
+      },
+    },
+    edges: [{ id: 'edge-1', source: 'block-1', target: 'block-2' }],
+    loops: {},
+    parallels: {},
+    variables: [{ id: 'var-1', name: 'count', type: 'number', value: 1 }],
+  },
+};
+
+export const mockWorkflowValidationVariablePartialMatch: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationWorkflow,
+  id: 'wf-partial-match',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': {
+        id: 'block-2',
+        type: 'agent',
+        enabled: true,
+        config: { prompt: 'Hello {{count2}}' },
+      },
+    },
+    edges: [{ id: 'edge-1', source: 'block-1', target: 'block-2' }],
+    loops: {},
+    parallels: {},
+    variables: [{ id: 'var-1', name: 'count', type: 'number', value: 1 }],
+  },
+};
+
+export const mockWorkflowValidationLoopTraversal: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-loop-traversal',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    },
+    edges: [
+      { id: 'edge-1', source: 'block-1', target: 'loop-1' },
+      { id: 'edge-2', source: 'loop-1', target: 'block-2' },
+    ],
+    loops: {
+      'loop-1': { id: 'loop-1', type: 'loop' },
+    },
+    parallels: {},
+  },
+};
+
+export const mockWorkflowValidationParallelTraversal: WorkflowValidationWorkflow = {
+  ...mockWorkflowValidationBase,
+  id: 'wf-parallel-traversal',
+  state: {
+    blocks: {
+      'block-1': { id: 'block-1', type: 'api_trigger', enabled: true },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    },
+    edges: [
+      { id: 'edge-1', source: 'block-1', target: 'parallel-1' },
+      { id: 'edge-2', source: 'parallel-1', target: 'block-2' },
+    ],
+    loops: {},
+    parallels: {
+      'parallel-1': { id: 'parallel-1', type: 'parallel' },
+    },
+  },
+};
+
+export const mockWorkflowValidationMap = {
+  'wf-123': mockWorkflowValidationWorkflow,
+  'wf-no-state': mockWorkflowValidationNoState,
+  'wf-bad-blocks': mockWorkflowValidationBadBlocks,
+  'wf-bad-edges': mockWorkflowValidationBadEdges,
+  'wf-malformed-entries': mockWorkflowValidationMalformedEntries,
+  'wf-unknown-type': mockWorkflowValidationUnknownType,
+  'wf-broken-edges': mockWorkflowValidationBrokenEdges,
+  'wf-isolated-enabled': mockWorkflowValidationIsolatedEnabledBlock,
+  'wf-disabled-path': mockWorkflowValidationDisabledPath,
+  'wf-unreachable-branch': mockWorkflowValidationUnreachableBranch,
+  'wf-unused-variable': mockWorkflowValidationUnusedVariable,
+  'wf-token-match': mockWorkflowValidationVariableTokenMatch,
+  'wf-partial-match': mockWorkflowValidationVariablePartialMatch,
+  'wf-loop-traversal': mockWorkflowValidationLoopTraversal,
+  'wf-parallel-traversal': mockWorkflowValidationParallelTraversal,
+} as const;
+
 /**
  * Sample import response
  */
@@ -439,6 +714,7 @@ export function createMockSimApiClient(
   const callHistory: MockCallHistory = {
     listWorkflows: [],
     getWorkflow: [],
+    getWorkflowStateForValidation: [],
     deleteWorkflow: [],
     getWorkflowStatus: [],
     getDeployedWorkflowState: [],
@@ -485,6 +761,17 @@ export function createMockSimApiClient(
       }
       return { ...mockWorkflowWithBlocks, id: workflowId };
     },
+    getWorkflowStateForValidation: async (workflowId) => {
+      callHistory.getWorkflowStateForValidation.push(workflowId);
+      const workflow =
+        mockWorkflowValidationMap[workflowId as keyof typeof mockWorkflowValidationMap];
+
+      if (!workflow) {
+        throw new Error('Workflow not found');
+      }
+
+      return workflow;
+    },
     deleteWorkflow: async (options) => {
       callHistory.deleteWorkflow.push(options);
       if (options.workflowId === 'not-found') {
@@ -525,10 +812,12 @@ export function createMockSimApiClient(
     undeployWorkflow: async (workflowId) => {
       callHistory.undeployWorkflow.push(workflowId);
       return {
-        ...mockWorkflowDeploymentResult,
         apiKey: null,
         isDeployed: false,
         deployedAt: null,
+        needsRedeployment: false,
+        isPublicApi: false,
+        warnings: [],
       };
     },
     executeWorkflow: async (workflowId, options) => {
@@ -642,6 +931,7 @@ export function createMockSimApiClient(
     // Core workflow methods
     listWorkflows: vi.fn(methods.listWorkflows),
     getWorkflow: vi.fn(methods.getWorkflow),
+    getWorkflowStateForValidation: vi.fn(methods.getWorkflowStateForValidation),
     deleteWorkflow: vi.fn(methods.deleteWorkflow),
     getWorkflowStatus: vi.fn(methods.getWorkflowStatus),
     getDeployedWorkflowState: vi.fn(methods.getDeployedWorkflowState),
@@ -697,6 +987,7 @@ export interface MockSimApiClientMethods {
     Workflow[]
   >;
   getWorkflow: (workflowId: string) => Promise<WorkflowWithBlocks>;
+  getWorkflowStateForValidation: (workflowId: string) => Promise<WorkflowValidationWorkflow>;
   deleteWorkflow: (options: {
     workflowId: string;
     checkTemplates?: boolean;
@@ -724,7 +1015,7 @@ export interface MockSimApiClientMethods {
     deployedAt: null;
     needsRedeployment: false;
     isPublicApi: false;
-    warnings: never[];
+    warnings: unknown[];
   }>;
   executeWorkflow: (
     workflowId: string,
@@ -834,6 +1125,7 @@ export interface MockSimApiClientMethods {
 export interface MockCallHistory {
   listWorkflows: Array<{ workspaceId?: string; limit?: number; offset?: number } | undefined>;
   getWorkflow: string[];
+  getWorkflowStateForValidation: string[];
   deleteWorkflow: Array<{
     workflowId: string;
     checkTemplates?: boolean;

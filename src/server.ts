@@ -37,8 +37,6 @@ import {
   DELETE_WORKFLOW_TOOL_NAME,
   DEPLOY_WORKFLOW_DESCRIPTION,
   DEPLOY_WORKFLOW_TOOL_NAME,
-  GET_DEPLOYMENT_VERSION_DESCRIPTION,
-  GET_DEPLOYMENT_VERSION_TOOL_NAME,
   EXECUTE_WORKFLOW_DESCRIPTION,
   EXECUTE_WORKFLOW_TOOL_NAME,
   GET_BLOCK_DESCRIPTION,
@@ -47,6 +45,8 @@ import {
   GET_CUSTOM_TOOL_TOOL_NAME,
   GET_DEPLOYED_WORKFLOW_STATE_DESCRIPTION,
   GET_DEPLOYED_WORKFLOW_STATE_TOOL_NAME,
+  GET_DEPLOYMENT_VERSION_DESCRIPTION,
+  GET_DEPLOYMENT_VERSION_TOOL_NAME,
   GET_EXECUTION_LOGS_DESCRIPTION,
   GET_EXECUTION_LOGS_TOOL_NAME,
   GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
@@ -95,6 +95,8 @@ import {
   UPDATE_SUBFLOW_TOOL_NAME,
   UPSERT_CUSTOM_TOOLS_DESCRIPTION,
   UPSERT_CUSTOM_TOOLS_TOOL_NAME,
+  VALIDATE_WORKFLOW_DESCRIPTION,
+  VALIDATE_WORKFLOW_TOOL_NAME,
   activateDeploymentVersion,
   activateDeploymentVersionInputSchema,
   addBlocks,
@@ -115,8 +117,6 @@ import {
   deleteWorkflowInputSchema,
   deployWorkflow,
   deployWorkflowInputSchema,
-  getDeploymentVersion,
-  getDeploymentVersionInputSchema,
   executeWorkflow,
   executeWorkflowInputSchema,
   getBlock,
@@ -125,6 +125,8 @@ import {
   getCustomToolInputSchema,
   getDeployedWorkflowState,
   getDeployedWorkflowStateInputSchema,
+  getDeploymentVersion,
+  getDeploymentVersionInputSchema,
   getExecutionLogDetail,
   getExecutionLogDetailInputSchema,
   getExecutionLogs,
@@ -173,6 +175,8 @@ import {
   updateSubflowInputSchema,
   upsertCustomTools,
   upsertCustomToolsInputSchema,
+  validateWorkflow,
+  validateWorkflowInputSchema,
 } from './tools/index.js';
 import { getLogger, initializeLogger } from './utils/logger.js';
 
@@ -246,6 +250,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: GET_WORKFLOW_TOOL_NAME,
       description: GET_WORKFLOW_DESCRIPTION,
       inputSchema: getWorkflowInputSchema,
+    },
+    {
+      name: VALIDATE_WORKFLOW_TOOL_NAME,
+      description: VALIDATE_WORKFLOW_DESCRIPTION,
+      inputSchema: validateWorkflowInputSchema,
     },
     {
       name: EXECUTE_WORKFLOW_TOOL_NAME,
@@ -480,6 +489,11 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
           return createResponse(result);
         }
 
+        case VALIDATE_WORKFLOW_TOOL_NAME: {
+          const input = parseToolArguments<{ workflowId: string }>(args);
+          const result = await validateWorkflow(apiClient, input);
+          return createResponse(result);
+        }
 
         case EXECUTE_WORKFLOW_TOOL_NAME: {
           const input = parseToolArguments<{

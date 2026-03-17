@@ -6,15 +6,20 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { NotFoundError, SimApiError, SimErrorCode, ValidationError } from '../../../src/client/index.js';
+import {
+  NotFoundError,
+  SimApiError,
+  SimErrorCode,
+  ValidationError,
+} from '../../../src/client/index.js';
 import type { Block } from '../../../src/schemas/workflow.js';
 import {
   activateDeploymentVersion,
   cancelExecution,
   deleteWorkflow,
   deployWorkflow,
-  getDeploymentVersion,
   getDeployedWorkflowState,
+  getDeploymentVersion,
   getExecutionLogDetail,
   getExecutionLogs,
   getWorkflow,
@@ -26,18 +31,20 @@ import {
   runFromBlock,
   runWorkflowUntilBlock,
   undeployWorkflow,
+  validateWorkflow,
 } from '../../../src/tools/workflow/index.js';
 import {
-  mockActivateDeploymentVersionResult,
   createMockSimApiClient,
+  mockActivateDeploymentVersionResult,
   mockCancelExecutionResult,
-  mockDeploymentVersionStateResult,
   mockDeployedWorkflow,
+  mockDeploymentVersionStateResult,
   mockExecutionLogDetail,
   mockExecutionLogs,
   mockRevertDeploymentVersionResult,
   mockWorkflow,
   mockWorkflowDeleteCheckResult,
+  mockWorkflowValidationWorkflow,
 } from '../../mocks/sim-api.js';
 
 // Mock the logger to avoid output during tests
@@ -158,6 +165,59 @@ describe('Workflow Tools', () => {
       await expect(getWorkflow(mockClient, { workflowId: 'wf-123' })).rejects.toThrow(
         'Network error'
       );
+    });
+  });
+
+  describe('validateWorkflow', () => {
+    it('calls the raw-state validation helper and returns { validation }', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await validateWorkflow(mockClient, { workflowId: 'wf-123' });
+
+      expect(mockClient.getWorkflowStateForValidation).toHaveBeenCalledWith('wf-123');
+      expect(result).toEqual({
+        validation: expect.objectContaining({
+          workflowId: 'wf-123',
+          valid: true,
+          errors: [],
+          warnings: [],
+          summary: expect.objectContaining({
+            enabledBlocks: 2,
+            enabledRoots: 1,
+            enabledReachableBlocks: 2,
+            edgesChecked: 1,
+          }),
+        }),
+      });
+      expect(mockClient.getWorkflow).not.toHaveBeenCalled();
+    });
+
+    it('propagates client fetch failures', async () => {
+      const mockClient = createMockSimApiClient({
+        getWorkflowStateForValidation: async () => {
+          throw new Error('validation fetch failed');
+        },
+      });
+
+      await expect(validateWorkflow(mockClient, { workflowId: 'wf-123' })).rejects.toThrow(
+        'validation fetch failed'
+      );
+    });
+
+    it('returns machine-readable findings from the pure validator', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await validateWorkflow(mockClient, { workflowId: 'wf-123' });
+
+      expect(Object.keys(result)).toEqual(['validation']);
+      expect(Object.keys(result.validation)).toEqual([
+        'workflowId',
+        'valid',
+        'summary',
+        'errors',
+        'warnings',
+      ]);
+      expect(result.validation.workflowId).toBe(mockWorkflowValidationWorkflow.id);
     });
   });
 

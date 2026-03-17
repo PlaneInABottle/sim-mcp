@@ -74,6 +74,7 @@ export type {
   WorkflowDeploymentResult,
   WorkflowState,
   WorkflowStatusResult,
+  WorkflowValidationWorkflow,
   UpdateBlockInput,
   UpdateWorkflowInput,
   Workflow,

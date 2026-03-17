@@ -22,6 +22,14 @@ export {
 } from './get.js';
 export type { GetWorkflowInput, GetWorkflowOutput } from './get.js';
 
+export {
+  VALIDATE_WORKFLOW_DESCRIPTION,
+  VALIDATE_WORKFLOW_TOOL_NAME,
+  validateWorkflow,
+  validateWorkflowInputSchema,
+} from './validate.js';
+export type { ValidateWorkflowInput, ValidateWorkflowOutput } from './validate.js';
+
 // Create workflow tool
 export {
   CREATE_WORKFLOW_DESCRIPTION,
