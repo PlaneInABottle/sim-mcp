@@ -5,15 +5,27 @@ import {
   mockWorkflowValidationBadBlocks,
   mockWorkflowValidationBadEdges,
   mockWorkflowValidationBrokenEdges,
+  mockWorkflowValidationBrokenEndpointWithHandle,
+  mockWorkflowValidationBrokenSourceHandle,
+  mockWorkflowValidationBrokenTargetHandle,
+  mockWorkflowValidationDeclarationAbsentHandle,
   mockWorkflowValidationDisabledPath,
   mockWorkflowValidationIsolatedEnabledBlock,
+  mockWorkflowValidationLoopHandleSkip,
   mockWorkflowValidationLoopTraversal,
   mockWorkflowValidationMalformedEntries,
+  mockWorkflowValidationMalformedSourceHandle,
+  mockWorkflowValidationMalformedTargetHandle,
   mockWorkflowValidationNoState,
+  mockWorkflowValidationNullHandles,
+  mockWorkflowValidationOmittedHandles,
   mockWorkflowValidationParallelTraversal,
   mockWorkflowValidationUnknownType,
   mockWorkflowValidationUnreachableBranch,
   mockWorkflowValidationUnusedVariable,
+  mockWorkflowValidationValidSourceHandleArray,
+  mockWorkflowValidationValidSourceHandleRecord,
+  mockWorkflowValidationValidTargetHandleArray,
   mockWorkflowValidationVariablePartialMatch,
   mockWorkflowValidationVariableTokenMatch,
   mockWorkflowValidationWorkflow,
@@ -73,6 +85,128 @@ describe('validateWorkflowDefinition', () => {
 
     expect(result.errors.map((finding) => finding.code)).toContain('broken_edge_source');
     expect(result.errors.map((finding) => finding.code)).toContain('broken_edge_target');
+  });
+
+  it('keeps omitted and null handles valid', () => {
+    const omittedResult = validateWorkflowDefinition(mockWorkflowValidationOmittedHandles);
+    const nullResult = validateWorkflowDefinition(mockWorkflowValidationNullHandles);
+
+    expect(omittedResult.errors.map((finding) => finding.code)).not.toEqual(
+      expect.arrayContaining([
+        'edge_source_handle_malformed',
+        'edge_target_handle_malformed',
+        'broken_edge_source_handle',
+        'broken_edge_target_handle',
+      ])
+    );
+    expect(nullResult.errors.map((finding) => finding.code)).not.toEqual(
+      expect.arrayContaining([
+        'edge_source_handle_malformed',
+        'edge_target_handle_malformed',
+        'broken_edge_source_handle',
+        'broken_edge_target_handle',
+      ])
+    );
+  });
+
+  it('reports malformed explicit handle field values', () => {
+    const sourceResult = validateWorkflowDefinition(mockWorkflowValidationMalformedSourceHandle);
+    const targetResult = validateWorkflowDefinition(mockWorkflowValidationMalformedTargetHandle);
+
+    expect(sourceResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'edge_source_handle_malformed',
+          edgeId: 'edge-1',
+          sourceId: 'block-1',
+          targetId: 'block-2',
+        }),
+      ])
+    );
+    expect(targetResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'edge_target_handle_malformed',
+          edgeId: 'edge-1',
+          sourceId: 'block-1',
+          targetId: 'block-2',
+        }),
+      ])
+    );
+  });
+
+  it('accepts explicit handles when locally declared', () => {
+    const sourceArrayResult = validateWorkflowDefinition(
+      mockWorkflowValidationValidSourceHandleArray
+    );
+    const sourceRecordResult = validateWorkflowDefinition(
+      mockWorkflowValidationValidSourceHandleRecord
+    );
+    const targetArrayResult = validateWorkflowDefinition(
+      mockWorkflowValidationValidTargetHandleArray
+    );
+
+    expect(sourceArrayResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_source_handle'
+    );
+    expect(sourceRecordResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_source_handle'
+    );
+    expect(targetArrayResult.errors.map((finding) => finding.code)).not.toContain(
+      'broken_edge_target_handle'
+    );
+  });
+
+  it('reports broken explicit handles only when declarations are locally supported', () => {
+    const brokenSourceResult = validateWorkflowDefinition(mockWorkflowValidationBrokenSourceHandle);
+    const brokenTargetResult = validateWorkflowDefinition(mockWorkflowValidationBrokenTargetHandle);
+    const declarationAbsentResult = validateWorkflowDefinition(
+      mockWorkflowValidationDeclarationAbsentHandle
+    );
+    const loopSkipResult = validateWorkflowDefinition(mockWorkflowValidationLoopHandleSkip);
+
+    expect(brokenSourceResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'broken_edge_source_handle',
+          edgeId: 'edge-1',
+          sourceId: 'block-1',
+          targetId: 'block-2',
+        }),
+      ])
+    );
+    expect(brokenTargetResult.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'broken_edge_target_handle',
+          edgeId: 'edge-1',
+          sourceId: 'block-1',
+          targetId: 'block-2',
+        }),
+      ])
+    );
+    expect(declarationAbsentResult.errors.map((finding) => finding.code)).not.toEqual(
+      expect.arrayContaining(['broken_edge_source_handle', 'broken_edge_target_handle'])
+    );
+    expect(loopSkipResult.errors.map((finding) => finding.code)).not.toEqual(
+      expect.arrayContaining(['broken_edge_source_handle', 'broken_edge_target_handle'])
+    );
+  });
+
+  it('keeps missing endpoint findings as the only errors for missing explicit-handle endpoints', () => {
+    const result = validateWorkflowDefinition(mockWorkflowValidationBrokenEndpointWithHandle);
+
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'broken_edge_source',
+          edgeId: 'edge-1',
+          sourceId: 'missing-source',
+        }),
+      ])
+    );
+    expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_source_handle');
+    expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_target_handle');
   });
 
   it('reports isolated enabled non-root blocks as unconnected', () => {

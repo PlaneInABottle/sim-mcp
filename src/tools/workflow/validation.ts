@@ -8,9 +8,13 @@ export type ValidationFindingCode =
   | 'workflow_block_malformed'
   | 'workflow_edges_invalid'
   | 'workflow_edge_malformed'
+  | 'edge_source_handle_malformed'
+  | 'edge_target_handle_malformed'
   | 'unknown_block_type'
   | 'broken_edge_source'
   | 'broken_edge_target'
+  | 'broken_edge_source_handle'
+  | 'broken_edge_target_handle'
   | 'unconnected_enabled_block'
   | 'unreachable_enabled_block'
   | 'unused_variable';
@@ -49,6 +53,8 @@ type RawEdge = {
   id?: unknown;
   source?: unknown;
   target?: unknown;
+  sourceHandle?: unknown;
+  targetHandle?: unknown;
 };
 
 type ValidBlockRecord = Record<string, Record<string, unknown>>;
@@ -57,6 +63,8 @@ type ValidEdgeRecord = {
   id: string;
   source: string;
   target: string;
+  sourceHandle?: unknown;
+  targetHandle?: unknown;
 };
 
 const VALID_BLOCK_TYPES = new Set<string>(BlockTypeEnum.options);
@@ -87,6 +95,48 @@ function isEnabledBlock(block: Record<string, unknown>): boolean {
 
 function createFinding(finding: ValidationFinding): ValidationFinding {
   return finding;
+}
+
+function isValidHandleField(value: unknown): value is string | null {
+  return typeof value === 'string' || value === null;
+}
+
+function extractHandleIdsFromArray(value: unknown): Set<string> | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const handleIds = new Set<string>();
+
+  for (const entry of value) {
+    if (!isObjectRecord(entry) || typeof entry.id !== 'string') {
+      return null;
+    }
+
+    handleIds.add(entry.id);
+  }
+
+  return handleIds;
+}
+
+function extractDeclaredSourceHandles(block: Record<string, unknown>): Set<string> | null {
+  if (Array.isArray(block.outputs)) {
+    return extractHandleIdsFromArray(block.outputs);
+  }
+
+  if (isObjectRecord(block.outputs)) {
+    return new Set(Object.keys(block.outputs));
+  }
+
+  return null;
+}
+
+function extractDeclaredTargetHandles(block: Record<string, unknown>): Set<string> | null {
+  if (!Array.isArray(block.inputs)) {
+    return null;
+  }
+
+  return extractHandleIdsFromArray(block.inputs);
 }
 
 function buildResult(
@@ -197,10 +247,44 @@ function collectValidEdges(
       continue;
     }
 
+    if ('sourceHandle' in edgeValue && !isValidHandleField(edgeValue.sourceHandle)) {
+      errors.push(
+        createFinding({
+          code: 'edge_source_handle_malformed',
+          severity: 'error',
+          scope: 'edge',
+          message: `Edge '${edgeId ?? `${edgeValue.source}->${edgeValue.target}`}' has an invalid sourceHandle value.`,
+          edgeId: edgeId ?? `${edgeValue.source}->${edgeValue.target}`,
+          sourceId: edgeValue.source,
+          targetId: edgeValue.target,
+        })
+      );
+    }
+
+    if ('targetHandle' in edgeValue && !isValidHandleField(edgeValue.targetHandle)) {
+      errors.push(
+        createFinding({
+          code: 'edge_target_handle_malformed',
+          severity: 'error',
+          scope: 'edge',
+          message: `Edge '${edgeId ?? `${edgeValue.source}->${edgeValue.target}`}' has an invalid targetHandle value.`,
+          edgeId: edgeId ?? `${edgeValue.source}->${edgeValue.target}`,
+          sourceId: edgeValue.source,
+          targetId: edgeValue.target,
+        })
+      );
+    }
+
     validEdges.push({
       id: edgeId ?? `${edgeValue.source}->${edgeValue.target}`,
       source: edgeValue.source,
       target: edgeValue.target,
+      ...(Object.prototype.hasOwnProperty.call(edgeValue, 'sourceHandle')
+        ? { sourceHandle: edgeValue.sourceHandle }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(edgeValue, 'targetHandle')
+        ? { targetHandle: edgeValue.targetHandle }
+        : {}),
     });
   }
 
@@ -241,6 +325,59 @@ function collectBrokenEdgeFindings(
           targetId: edge.target,
         })
       );
+    }
+  }
+}
+
+function collectBrokenHandleFindings(
+  edges: ValidEdgeRecord[],
+  validBlocks: ValidBlockRecord,
+  structuralNodeIds: Set<string>,
+  errors: ValidationFinding[]
+): void {
+  for (const edge of edges) {
+    const sourceBlock = validBlocks[edge.source];
+    if (
+      sourceBlock &&
+      !structuralNodeIds.has(edge.source) &&
+      typeof edge.sourceHandle === 'string'
+    ) {
+      const declaredSourceHandles = extractDeclaredSourceHandles(sourceBlock);
+      if (declaredSourceHandles && !declaredSourceHandles.has(edge.sourceHandle)) {
+        errors.push(
+          createFinding({
+            code: 'broken_edge_source_handle',
+            severity: 'error',
+            scope: 'edge',
+            message: `Edge '${edge.id}' references an unknown source handle on block '${edge.source}'.`,
+            edgeId: edge.id,
+            sourceId: edge.source,
+            targetId: edge.target,
+          })
+        );
+      }
+    }
+
+    const targetBlock = validBlocks[edge.target];
+    if (
+      targetBlock &&
+      !structuralNodeIds.has(edge.target) &&
+      typeof edge.targetHandle === 'string'
+    ) {
+      const declaredTargetHandles = extractDeclaredTargetHandles(targetBlock);
+      if (declaredTargetHandles && !declaredTargetHandles.has(edge.targetHandle)) {
+        errors.push(
+          createFinding({
+            code: 'broken_edge_target_handle',
+            severity: 'error',
+            scope: 'edge',
+            message: `Edge '${edge.id}' references an unknown target handle on block '${edge.target}'.`,
+            edgeId: edge.id,
+            sourceId: edge.source,
+            targetId: edge.target,
+          })
+        );
+      }
     }
   }
 }
@@ -501,6 +638,7 @@ export function validateWorkflowDefinition(
 
   if (edgeResult.edgesTraversable) {
     collectBrokenEdgeFindings(edgeResult.validEdges, nodeIds, errors);
+    collectBrokenHandleFindings(edgeResult.validEdges, validBlocks, structuralNodeIds, errors);
   }
 
   const enabledGraph = collectEnabledGraph(validBlocks, structuralNodeIds, edgeResult.validEdges);

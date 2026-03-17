@@ -7,7 +7,7 @@ import { type WorkflowValidationResult, validateWorkflowDefinition } from './val
 export const VALIDATE_WORKFLOW_TOOL_NAME = 'validate_workflow';
 
 export const VALIDATE_WORKFLOW_DESCRIPTION =
-  'Validate a workflow draft and return phase-1 structural findings for malformed state, broken edges, connectivity, reachability, and unused variables.';
+  'Validate a workflow draft and return structural plus minimal handle findings for malformed state, broken edges, connectivity, reachability, unused variables, and locally provable handle issues.';
 
 export const validateWorkflowInputSchema = {
   type: 'object',
