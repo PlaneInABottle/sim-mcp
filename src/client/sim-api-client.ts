@@ -678,6 +678,47 @@ export class SimApiClient {
   }
 
   /**
+   * Update a block's advanced mode
+   *
+   * @param workflowId - The workflow ID
+   * @param blockId - The block ID
+   * @param advancedMode - Whether advanced mode should be enabled
+   * @returns Operation response
+   */
+  async updateBlockAdvancedMode(
+    workflowId: string,
+    blockId: string,
+    advancedMode: boolean
+  ): Promise<OperationResponse> {
+    return this.workflowOperation(workflowId, 'update-advanced-mode', 'block', {
+      id: blockId,
+      advancedMode,
+    });
+  }
+
+  /**
+   * Update a block canonical mode entry
+   *
+   * @param workflowId - The workflow ID
+   * @param blockId - The block ID
+   * @param canonicalId - The canonical entry ID
+   * @param canonicalMode - The canonical mode to apply
+   * @returns Operation response
+   */
+  async updateBlockCanonicalMode(
+    workflowId: string,
+    blockId: string,
+    canonicalId: string,
+    canonicalMode: 'basic' | 'advanced'
+  ): Promise<OperationResponse> {
+    return this.workflowOperation(workflowId, 'update-canonical-mode', 'block', {
+      id: blockId,
+      canonicalId,
+      canonicalMode,
+    });
+  }
+
+  /**
    * Add an edge via operations endpoint
    *
    * @param workflowId - The workflow ID

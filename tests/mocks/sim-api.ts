@@ -966,6 +966,89 @@ export const mockWorkflowValidationImplicitHandles = createWorkflowValidationWor
   )
 );
 
+export const mockWorkflowValidationValidConditionRowHandles = createWorkflowValidationWorkflow(
+  'wf-valid-condition-row-handles',
+  createHandleValidationState(
+    [{ id: 'edge-1', source: 'block-1', target: 'block-2', sourceHandle: 'condition-row-1' }],
+    {
+      'block-1': {
+        id: 'block-1',
+        type: 'condition',
+        enabled: true,
+        outputs: {},
+        subBlocks: {
+          conditions: {
+            value: [
+              { id: 'row-1', field: 'x', operator: 'equals', value: 'y' },
+              { id: 'row-2', field: 'a', operator: 'equals', value: 'b' },
+            ],
+          },
+        },
+      },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    }
+  )
+);
+
+export const mockWorkflowValidationStaleConditionRowHandle = createWorkflowValidationWorkflow(
+  'wf-stale-condition-row-handle',
+  createHandleValidationState(
+    [
+      {
+        id: 'edge-1',
+        source: 'block-1',
+        target: 'block-2',
+        sourceHandle: 'condition-stale-row-id',
+      },
+    ],
+    {
+      'block-1': {
+        id: 'block-1',
+        type: 'condition',
+        enabled: true,
+        outputs: {},
+        subBlocks: {
+          conditions: {
+            value: [
+              { id: 'row-1', field: 'x', operator: 'equals', value: 'y' },
+              { id: 'row-2', field: 'a', operator: 'equals', value: 'b' },
+            ],
+          },
+        },
+      },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    }
+  )
+);
+
+export const mockWorkflowValidationMalformedConditionRows = createWorkflowValidationWorkflow(
+  'wf-malformed-condition-rows',
+  createHandleValidationState(
+    [
+      {
+        id: 'edge-1',
+        source: 'block-1',
+        target: 'block-2',
+        sourceHandle: 'condition-stale-row-id',
+      },
+    ],
+    {
+      'block-1': {
+        id: 'block-1',
+        type: 'condition',
+        enabled: true,
+        outputs: {},
+        subBlocks: {
+          conditions: {
+            value: '{bad json}',
+          },
+        },
+      },
+      'block-2': { id: 'block-2', type: 'agent', enabled: true },
+    }
+  )
+);
+
 export const mockWorkflowValidationMap = {
   'wf-123': mockWorkflowValidationWorkflow,
   'wf-no-state': mockWorkflowValidationNoState,
@@ -1005,6 +1088,9 @@ export const mockWorkflowValidationMap = {
   'wf-duplicate-malformed-inputs-declaration':
     mockWorkflowValidationDuplicateMalformedInputsDeclaration,
   'wf-implicit-handles': mockWorkflowValidationImplicitHandles,
+  'wf-valid-condition-row-handles': mockWorkflowValidationValidConditionRowHandles,
+  'wf-stale-condition-row-handle': mockWorkflowValidationStaleConditionRowHandle,
+  'wf-malformed-condition-rows': mockWorkflowValidationMalformedConditionRows,
 } as const;
 
 /**
@@ -1106,6 +1192,8 @@ export function createMockSimApiClient(
     updateBlockName: [],
     toggleBlockEnabled: [],
     updateBlockParent: [],
+    updateBlockAdvancedMode: [],
+    updateBlockCanonicalMode: [],
     addEdgeOperation: [],
     removeEdgeOperation: [],
     replaceWorkflowState: [],
@@ -1238,6 +1326,19 @@ export function createMockSimApiClient(
       callHistory.updateBlockParent.push({ workflowId, blockId, parentId });
       return mockOperationResponse;
     },
+    updateBlockAdvancedMode: async (workflowId, blockId, advancedMode) => {
+      callHistory.updateBlockAdvancedMode.push({ workflowId, blockId, advancedMode });
+      return mockOperationResponse;
+    },
+    updateBlockCanonicalMode: async (workflowId, blockId, canonicalId, canonicalMode) => {
+      callHistory.updateBlockCanonicalMode.push({
+        workflowId,
+        blockId,
+        canonicalId,
+        canonicalMode,
+      });
+      return mockOperationResponse;
+    },
     addEdgeOperation: async (workflowId, edge) => {
       callHistory.addEdgeOperation.push({ workflowId, edge });
       return mockOperationResponse;
@@ -1324,6 +1425,8 @@ export function createMockSimApiClient(
     updateBlockName: vi.fn(methods.updateBlockName),
     toggleBlockEnabled: vi.fn(methods.toggleBlockEnabled),
     updateBlockParent: vi.fn(methods.updateBlockParent),
+    updateBlockAdvancedMode: vi.fn(methods.updateBlockAdvancedMode),
+    updateBlockCanonicalMode: vi.fn(methods.updateBlockCanonicalMode),
     addEdgeOperation: vi.fn(methods.addEdgeOperation),
     removeEdgeOperation: vi.fn(methods.removeEdgeOperation),
     replaceWorkflowState: vi.fn(methods.replaceWorkflowState),
@@ -1460,6 +1563,17 @@ export interface MockSimApiClientMethods {
     blockId: string,
     parentId: string | null
   ) => Promise<OperationResponse>;
+  updateBlockAdvancedMode: (
+    workflowId: string,
+    blockId: string,
+    advancedMode: boolean
+  ) => Promise<OperationResponse>;
+  updateBlockCanonicalMode: (
+    workflowId: string,
+    blockId: string,
+    canonicalId: string,
+    canonicalMode: 'basic' | 'advanced'
+  ) => Promise<OperationResponse>;
   addEdgeOperation: (
     workflowId: string,
     edge: Record<string, unknown>
@@ -1567,6 +1681,17 @@ export interface MockCallHistory {
   updateBlockName: Array<{ workflowId: string; blockId: string; name: string }>;
   toggleBlockEnabled: Array<{ workflowId: string; blockId: string; enabled: boolean }>;
   updateBlockParent: Array<{ workflowId: string; blockId: string; parentId: string | null }>;
+  updateBlockAdvancedMode: Array<{
+    workflowId: string;
+    blockId: string;
+    advancedMode: boolean;
+  }>;
+  updateBlockCanonicalMode: Array<{
+    workflowId: string;
+    blockId: string;
+    canonicalId: string;
+    canonicalMode: 'basic' | 'advanced';
+  }>;
   addEdgeOperation: Array<{ workflowId: string; edge: Record<string, unknown> }>;
   removeEdgeOperation: Array<{ workflowId: string; edgeId: string }>;
   replaceWorkflowState: Array<{ workflowId: string; state: Record<string, unknown> }>;

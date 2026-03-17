@@ -15,6 +15,7 @@ export type ValidationFindingCode =
   | 'unknown_block_type'
   | 'broken_edge_source'
   | 'broken_edge_target'
+  | 'stale_condition_source_handle'
   | 'broken_edge_source_handle'
   | 'broken_edge_target_handle'
   | 'unconnected_enabled_block'
@@ -89,6 +90,12 @@ const IMPLICIT_SOURCE_HANDLES = new Set<string>(['source', 'error']);
 const IMPLICIT_TARGET_HANDLES = new Set<string>(['target']);
 const DYNAMIC_SOURCE_HANDLE_PREFIXES = ['condition-', 'router-', 'switch-'];
 
+type ConditionHandleInspection =
+  | { status: 'not_applicable' }
+  | { status: 'absent' }
+  | { status: 'malformed' }
+  | { status: 'valid'; handles: Set<string> };
+
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -122,6 +129,44 @@ function isImplicitSourceHandle(handle: string): boolean {
 
 function isImplicitTargetHandle(handle: string): boolean {
   return IMPLICIT_TARGET_HANDLES.has(handle);
+}
+
+function inspectConditionSourceHandles(block: Record<string, unknown>): ConditionHandleInspection {
+  if (block.type !== 'condition') {
+    return { status: 'not_applicable' };
+  }
+
+  const subBlocks = toObjectRecord(block.subBlocks);
+  const conditionsSubBlock = subBlocks ? toObjectRecord(subBlocks.conditions) : null;
+
+  if (!conditionsSubBlock || !Object.prototype.hasOwnProperty.call(conditionsSubBlock, 'value')) {
+    return { status: 'absent' };
+  }
+
+  const rawValue = conditionsSubBlock.value;
+
+  let parsedValue: unknown;
+  try {
+    parsedValue = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+  } catch {
+    return { status: 'malformed' };
+  }
+
+  if (!Array.isArray(parsedValue)) {
+    return { status: 'malformed' };
+  }
+
+  const handles = new Set<string>();
+
+  for (const entry of parsedValue) {
+    if (!isObjectRecord(entry) || typeof entry.id !== 'string') {
+      return { status: 'malformed' };
+    }
+
+    handles.add(`condition-${entry.id}`);
+  }
+
+  return { status: 'valid', handles };
 }
 
 function inspectHandleIdsArray(value: unknown): HandleDeclarationInspection {
@@ -366,6 +411,34 @@ function collectBrokenHandleFindings(
 
   for (const edge of edges) {
     const sourceBlock = validBlocks[edge.source];
+    const conditionHandles =
+      sourceBlock &&
+      typeof edge.sourceHandle === 'string' &&
+      edge.sourceHandle.startsWith('condition-')
+        ? inspectConditionSourceHandles(sourceBlock)
+        : { status: 'not_applicable' as const };
+
+    if (
+      sourceBlock &&
+      !structuralNodeIds.has(edge.source) &&
+      typeof edge.sourceHandle === 'string' &&
+      conditionHandles.status === 'valid' &&
+      !conditionHandles.handles.has(edge.sourceHandle)
+    ) {
+      errors.push(
+        createFinding({
+          code: 'stale_condition_source_handle',
+          severity: 'error',
+          scope: 'edge',
+          message: `Edge '${edge.id}' references a stale condition source handle on block '${edge.source}'.`,
+          edgeId: edge.id,
+          sourceId: edge.source,
+          targetId: edge.target,
+        })
+      );
+      continue;
+    }
+
     if (
       sourceBlock &&
       !structuralNodeIds.has(edge.source) &&

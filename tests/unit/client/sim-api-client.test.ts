@@ -171,6 +171,57 @@ describe('SimApiClient deployment version lifecycle requests', () => {
     );
   });
 
+  it('sends update block advanced mode via the operations endpoint', async () => {
+    const client = createClient();
+    request.mockResolvedValue({ data: { success: true, operationId: 'op-advanced-1' } });
+
+    await expect(client.updateBlockAdvancedMode('wf-123', 'block-1', true)).resolves.toEqual({
+      success: true,
+      operationId: 'op-advanced-1',
+    });
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/api/workflows/wf-123/operations',
+        data: {
+          operation: 'update-advanced-mode',
+          target: 'block',
+          payload: {
+            id: 'block-1',
+            advancedMode: true,
+          },
+        },
+      })
+    );
+  });
+
+  it('sends update block canonical mode via the operations endpoint', async () => {
+    const client = createClient();
+    request.mockResolvedValue({ data: { success: true, operationId: 'op-canonical-1' } });
+
+    await expect(
+      client.updateBlockCanonicalMode('wf-123', 'block-1', 'canonical-1', 'advanced')
+    ).resolves.toEqual({
+      success: true,
+      operationId: 'op-canonical-1',
+    });
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/api/workflows/wf-123/operations',
+        data: {
+          operation: 'update-canonical-mode',
+          target: 'block',
+          payload: {
+            id: 'block-1',
+            canonicalId: 'canonical-1',
+            canonicalMode: 'advanced',
+          },
+        },
+      })
+    );
+  });
+
   it('sends replace workflow state via the state endpoint', async () => {
     const client = createClient();
     const state = {

@@ -83,6 +83,10 @@ import {
   TOGGLE_BLOCK_ENABLED_TOOL_NAME,
   UNDEPLOY_WORKFLOW_DESCRIPTION,
   UNDEPLOY_WORKFLOW_TOOL_NAME,
+  UPDATE_BLOCK_ADVANCED_MODE_DESCRIPTION,
+  UPDATE_BLOCK_ADVANCED_MODE_TOOL_NAME,
+  UPDATE_BLOCK_CANONICAL_MODE_DESCRIPTION,
+  UPDATE_BLOCK_CANONICAL_MODE_TOOL_NAME,
   UPDATE_BLOCK_NAME_DESCRIPTION,
   UPDATE_BLOCK_NAME_TOOL_NAME,
   UPDATE_BLOCK_PARENT_DESCRIPTION,
@@ -163,6 +167,10 @@ import {
   toggleBlockEnabledInputSchema,
   undeployWorkflow,
   undeployWorkflowInputSchema,
+  updateBlockAdvancedMode,
+  updateBlockAdvancedModeInputSchema,
+  updateBlockCanonicalMode,
+  updateBlockCanonicalModeInputSchema,
   updateBlockName,
   updateBlockNameInputSchema,
   updateBlockParent,
@@ -342,7 +350,7 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       description: GET_EXECUTION_LOG_DETAIL_DESCRIPTION,
       inputSchema: getExecutionLogDetailInputSchema,
     },
-    // Block tools (6 operation-based)
+    // Block tools (8 operation-based)
     {
       name: GET_BLOCK_TOOL_NAME,
       description: GET_BLOCK_DESCRIPTION,
@@ -372,6 +380,16 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
       name: UPDATE_BLOCK_PARENT_TOOL_NAME,
       description: UPDATE_BLOCK_PARENT_DESCRIPTION,
       inputSchema: updateBlockParentInputSchema,
+    },
+    {
+      name: UPDATE_BLOCK_ADVANCED_MODE_TOOL_NAME,
+      description: UPDATE_BLOCK_ADVANCED_MODE_DESCRIPTION,
+      inputSchema: updateBlockAdvancedModeInputSchema,
+    },
+    {
+      name: UPDATE_BLOCK_CANONICAL_MODE_TOOL_NAME,
+      description: UPDATE_BLOCK_CANONICAL_MODE_DESCRIPTION,
+      inputSchema: updateBlockCanonicalModeInputSchema,
     },
     {
       name: UPDATE_SUBBLOCK_TOOL_NAME,
@@ -719,6 +737,27 @@ function registerTools(server: Server, apiClient: SimApiClient): void {
             parentId: string | null;
           }>(args);
           const result = await updateBlockParent(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UPDATE_BLOCK_ADVANCED_MODE_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            blockId: string;
+            advancedMode: boolean;
+          }>(args);
+          const result = await updateBlockAdvancedMode(apiClient, input);
+          return createResponse(result);
+        }
+
+        case UPDATE_BLOCK_CANONICAL_MODE_TOOL_NAME: {
+          const input = parseToolArguments<{
+            workflowId: string;
+            blockId: string;
+            canonicalId: string;
+            canonicalMode: 'basic' | 'advanced';
+          }>(args);
+          const result = await updateBlockCanonicalMode(apiClient, input);
           return createResponse(result);
         }
 

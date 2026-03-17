@@ -58,6 +58,30 @@ export {
 } from './update-parent.js';
 export type { UpdateBlockParentInput, UpdateBlockParentOutput } from './update-parent.js';
 
+// Update block advanced mode tool
+export {
+  UPDATE_BLOCK_ADVANCED_MODE_DESCRIPTION,
+  UPDATE_BLOCK_ADVANCED_MODE_TOOL_NAME,
+  updateBlockAdvancedMode,
+  updateBlockAdvancedModeInputSchema,
+} from './update-advanced-mode.js';
+export type {
+  UpdateBlockAdvancedModeInput,
+  UpdateBlockAdvancedModeOutput,
+} from './update-advanced-mode.js';
+
+// Update block canonical mode tool
+export {
+  UPDATE_BLOCK_CANONICAL_MODE_DESCRIPTION,
+  UPDATE_BLOCK_CANONICAL_MODE_TOOL_NAME,
+  updateBlockCanonicalMode,
+  updateBlockCanonicalModeInputSchema,
+} from './update-canonical-mode.js';
+export type {
+  UpdateBlockCanonicalModeInput,
+  UpdateBlockCanonicalModeOutput,
+} from './update-canonical-mode.js';
+
 // Update subblock tool
 export {
   UPDATE_SUBBLOCK_DESCRIPTION,

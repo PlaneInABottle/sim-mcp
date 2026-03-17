@@ -91,6 +91,8 @@ The server currently requires backend API credentials at startup.
 - `update_block_name` — rename a block
 - `toggle_block_enabled` — enable or disable a block
 - `update_block_parent` — set or clear a block parent for nesting
+- `update_block_advanced_mode` — update a block advanced-mode flag
+- `update_block_canonical_mode` — update a block canonical mode entry
 - `update_subblock` — update a block subblock value
 
 #### Edges

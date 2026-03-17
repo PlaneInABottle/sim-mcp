@@ -12,10 +12,13 @@ import {
   getBlock,
   removeBlocks,
   toggleBlockEnabled,
+  updateBlockAdvancedMode,
+  updateBlockCanonicalMode,
   updateBlockName,
   updateBlockParent,
   updateSubblock,
 } from '../../../src/tools/blocks/index.js';
+import { BROADCAST_FAILURE_WARNING } from '../../../src/utils/broadcast-warning.js';
 import { createMockSimApiClient, mockBlock, mockBlockWithConfig } from '../../mocks/sim-api.js';
 
 // Mock the logger to avoid output during tests
@@ -347,6 +350,163 @@ describe('Block Operation Tools', () => {
           parentId: 'loop-1',
         })
       ).rejects.toThrow('Update parent failed');
+    });
+  });
+
+  describe('updateBlockAdvancedMode', () => {
+    it('should update block advanced mode and return operation result', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await updateBlockAdvancedMode(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        advancedMode: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.operationId).toBeDefined();
+    });
+
+    it('should call client with correct parameters', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await updateBlockAdvancedMode(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        advancedMode: false,
+      });
+
+      expect(mockClient.updateBlockAdvancedMode).toHaveBeenCalledWith('wf-123', 'block-1', false);
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        updateBlockAdvancedMode: async () => {
+          throw new Error('Advanced mode update failed');
+        },
+      });
+
+      await expect(
+        updateBlockAdvancedMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          advancedMode: true,
+        })
+      ).rejects.toThrow('Advanced mode update failed');
+    });
+
+    it('should surface broadcast warning when realtime sync fails', async () => {
+      const mockClient = createMockSimApiClient({
+        updateBlockAdvancedMode: async () => ({
+          success: true,
+          operationId: 'op-advanced-warning',
+          timestamp: Date.now(),
+          broadcastSent: false,
+        }),
+      });
+
+      await expect(
+        updateBlockAdvancedMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          advancedMode: true,
+        })
+      ).resolves.toEqual({
+        success: true,
+        operationId: 'op-advanced-warning',
+        warning: BROADCAST_FAILURE_WARNING,
+      });
+    });
+
+    it('should require advancedMode', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        updateBlockAdvancedMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          advancedMode: undefined as unknown as boolean,
+        })
+      ).rejects.toThrow("Missing required parameter 'advancedMode' for update_block_advanced_mode");
+    });
+  });
+
+  describe('updateBlockCanonicalMode', () => {
+    it('should update block canonical mode and return operation result', async () => {
+      const mockClient = createMockSimApiClient();
+
+      const result = await updateBlockCanonicalMode(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        canonicalId: 'canonical-1',
+        canonicalMode: 'advanced',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.operationId).toBeDefined();
+    });
+
+    it('should call client with correct parameters', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await updateBlockCanonicalMode(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-1',
+        canonicalId: 'canonical-1',
+        canonicalMode: 'basic',
+      });
+
+      expect(mockClient.updateBlockCanonicalMode).toHaveBeenCalledWith(
+        'wf-123',
+        'block-1',
+        'canonical-1',
+        'basic'
+      );
+    });
+
+    it('should propagate API errors', async () => {
+      const mockClient = createMockSimApiClient({
+        updateBlockCanonicalMode: async () => {
+          throw new Error('Canonical mode update failed');
+        },
+      });
+
+      await expect(
+        updateBlockCanonicalMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          canonicalId: 'canonical-1',
+          canonicalMode: 'advanced',
+        })
+      ).rejects.toThrow('Canonical mode update failed');
+    });
+
+    it('should require canonicalId', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        updateBlockCanonicalMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          canonicalId: '',
+          canonicalMode: 'basic',
+        })
+      ).rejects.toThrow("Missing required parameter 'canonicalId' for update_block_canonical_mode");
+    });
+
+    it('should require canonicalMode', async () => {
+      const mockClient = createMockSimApiClient();
+
+      await expect(
+        updateBlockCanonicalMode(mockClient, {
+          workflowId: 'wf-123',
+          blockId: 'block-1',
+          canonicalId: 'canonical-1',
+          canonicalMode: undefined as unknown as 'basic' | 'advanced',
+        })
+      ).rejects.toThrow(
+        "Missing required parameter 'canonicalMode' for update_block_canonical_mode"
+      );
     });
   });
 

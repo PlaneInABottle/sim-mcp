@@ -16,6 +16,7 @@ import {
   mockWorkflowValidationIsolatedEnabledBlock,
   mockWorkflowValidationLoopHandleSkip,
   mockWorkflowValidationLoopTraversal,
+  mockWorkflowValidationMalformedConditionRows,
   mockWorkflowValidationMalformedEntries,
   mockWorkflowValidationMalformedInputsArrayDeclaration,
   mockWorkflowValidationMalformedInputsContainerDeclaration,
@@ -27,9 +28,11 @@ import {
   mockWorkflowValidationNullHandles,
   mockWorkflowValidationOmittedHandles,
   mockWorkflowValidationParallelTraversal,
+  mockWorkflowValidationStaleConditionRowHandle,
   mockWorkflowValidationUnknownType,
   mockWorkflowValidationUnreachableBranch,
   mockWorkflowValidationUnusedVariable,
+  mockWorkflowValidationValidConditionRowHandles,
   mockWorkflowValidationValidSourceHandleArray,
   mockWorkflowValidationValidSourceHandleRecord,
   mockWorkflowValidationValidTargetHandleArray,
@@ -329,6 +332,37 @@ describe('validateWorkflowDefinition', () => {
 
     expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_source_handle');
     expect(result.errors.map((finding) => finding.code)).not.toContain('broken_edge_target_handle');
+  });
+
+  it('accepts exact condition row-id handles when current condition rows prove them', () => {
+    const result = validateWorkflowDefinition(mockWorkflowValidationValidConditionRowHandles);
+
+    expect(result.errors.map((finding) => finding.code)).not.toContain(
+      'stale_condition_source_handle'
+    );
+  });
+
+  it('reports stale condition source handles when current condition rows disprove them', () => {
+    const result = validateWorkflowDefinition(mockWorkflowValidationStaleConditionRowHandle);
+
+    expect(result.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'stale_condition_source_handle',
+          edgeId: 'edge-1',
+          sourceId: 'block-1',
+          targetId: 'block-2',
+        }),
+      ])
+    );
+  });
+
+  it('skips stale condition-handle findings when condition row data is malformed', () => {
+    const result = validateWorkflowDefinition(mockWorkflowValidationMalformedConditionRows);
+
+    expect(result.errors.map((finding) => finding.code)).not.toContain(
+      'stale_condition_source_handle'
+    );
   });
 
   it('reports isolated enabled non-root blocks as unconnected', () => {
