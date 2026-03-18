@@ -52,11 +52,12 @@ The server currently requires backend API credentials at startup.
 
 ### Workflow discovery and lifecycle
 
-- `list_workflows` — list accessible workflows
+- `list_workflows` — list accessible workflows and return basic metadata only
 - `get_workflow` — fetch one workflow; use `verbose=true` only when full block config is required
+- `validate_workflow` — validate a workflow draft for structure, reachability, unused variables, and provable handle issues
 - `create_workflow` — create a new workflow
 - `delete_workflow` — delete a workflow, with template-check handling options
-- `get_workflow_status` — inspect deployment/draft status
+- `get_workflow_status` — inspect deployment status and whether draft changes need redeployment
 - `get_deployed_workflow_state` — fetch the currently deployed state
 - `deploy_workflow` — deploy the current draft
 - `undeploy_workflow` — remove the active deployment
@@ -70,7 +71,7 @@ The server currently requires backend API credentials at startup.
 
 ### Workflow execution and debug control
 
-- `execute_workflow` — execute a workflow from its trigger entrypoint
+- `execute_workflow` — execute a workflow and return its execution result; accepts optional input and defaults to draft state
 - `run_workflow_until_block` — run until a specific block completes
 - `run_from_block` — resume from a specific block using a prior execution snapshot
 - `run_block` — run a single block in isolation
@@ -78,7 +79,7 @@ The server currently requires backend API credentials at startup.
 
 ### Execution logs
 
-- `get_execution_logs` — list/filter execution logs for a workspace
+- `get_execution_logs` — list/filter execution logs and return `{ count, data, nextCursor?, limits? }`
 - `get_execution_log_detail` — fetch full detail for one execution log
 
 ### Workflow graph editing
