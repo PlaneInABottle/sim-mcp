@@ -6,9 +6,9 @@
  * - get_execution_log_detail: Get full detail for a specific log via GET /api/v1/logs/{id}
  */
 
-import { NotFoundError, type SimApiClient, ValidationError } from '../../client/index.js'
-import { getLogger } from '../../utils/logger.js'
-import { isSimApiErrorWithStatus, mapAuthModeError, validateRequiredParams } from './shared.js'
+import { NotFoundError, type SimApiClient, ValidationError } from '../../client/index.js';
+import { getLogger } from '../../utils/logger.js';
+import { isSimApiErrorWithStatus, mapAuthModeError, validateRequiredParams } from './shared.js';
 
 // ==========================================
 // get_execution_logs
@@ -17,16 +17,15 @@ import { isSimApiErrorWithStatus, mapAuthModeError, validateRequiredParams } fro
 /**
  * Tool name constant
  */
-export const GET_EXECUTION_LOGS_TOOL_NAME = 'get_execution_logs'
+export const GET_EXECUTION_LOGS_TOOL_NAME = 'get_execution_logs';
 
 /**
  * Tool description for MCP registration
  */
 export const GET_EXECUTION_LOGS_DESCRIPTION =
-  'List and filter workflow execution logs. Returns an array of execution logs with optional ' +
-  'trace spans, cost data, and final output. Requires a workspaceId. Supports filtering by ' +
-  'workflow, execution ID, log level, date range, duration, cost, and trigger type. ' +
-  'Uses cursor-based pagination.'
+  'List and filter workflow execution logs. Returns `{ count, data, nextCursor?, limits? }`, ' +
+  'where `data` contains the log entries. Supports optional trace spans, cost data, final output, ' +
+  'and cursor-based pagination.';
 
 /**
  * JSON Schema for get_execution_logs input (for MCP registration)
@@ -81,7 +80,7 @@ export const getExecutionLogsInputSchema = {
     },
     limit: {
       type: 'number',
-      description: 'Maximum number of logs to return (default: 100)',
+      description: 'Maximum number of logs to return',
     },
     cursor: {
       type: 'string',
@@ -90,13 +89,13 @@ export const getExecutionLogsInputSchema = {
     order: {
       type: 'string',
       enum: ['desc', 'asc'],
-      description: 'Sort order by start time (default: "desc")',
+      description: 'Sort order by start time',
     },
     details: {
       type: 'string',
       enum: ['basic', 'full'],
       description:
-        'Level of detail to return. "basic" returns summary fields, "full" includes execution data and workflow context (default: "basic")',
+        'Level of detail to return. "basic" returns summary fields, "full" includes execution data and workflow context.',
     },
     includeTraceSpans: {
       type: 'boolean',
@@ -109,90 +108,90 @@ export const getExecutionLogsInputSchema = {
     },
   },
   required: ['workspaceId'],
-}
+};
 
 /**
  * Input type for get_execution_logs
  */
 export interface GetExecutionLogsInput {
-  workspaceId: string
-  workflowId?: string
-  executionId?: string
-  level?: 'info' | 'error'
-  startDate?: string
-  endDate?: string
-  minDurationMs?: number
-  maxDurationMs?: number
-  minCost?: number
-  maxCost?: number
-  trigger?: string
-  limit?: number
-  cursor?: string
-  order?: 'desc' | 'asc'
-  details?: 'basic' | 'full'
-  includeTraceSpans?: boolean
-  includeFinalOutput?: boolean
+  workspaceId: string;
+  workflowId?: string;
+  executionId?: string;
+  level?: 'info' | 'error';
+  startDate?: string;
+  endDate?: string;
+  minDurationMs?: number;
+  maxDurationMs?: number;
+  minCost?: number;
+  maxCost?: number;
+  trigger?: string;
+  limit?: number;
+  cursor?: string;
+  order?: 'desc' | 'asc';
+  details?: 'basic' | 'full';
+  includeTraceSpans?: boolean;
+  includeFinalOutput?: boolean;
 }
 
 /**
  * Output type for get_execution_logs
  */
 export interface GetExecutionLogsOutput {
-  count: number
-  data: Array<Record<string, unknown>>
-  nextCursor?: string
-  limits?: Record<string, unknown>
+  count: number;
+  data: Array<Record<string, unknown>>;
+  nextCursor?: string;
+  limits?: Record<string, unknown>;
 }
 
 type ExecutionLogsListResult =
   | Array<Record<string, unknown>>
   | {
-      data?: Array<Record<string, unknown>>
-      nextCursor?: string
-      limits?: Record<string, unknown>
-    }
+      data?: Array<Record<string, unknown>>;
+      nextCursor?: string;
+      limits?: Record<string, unknown>;
+    };
 
 type ExecutionLogDetailResult =
   | {
-      data?: Record<string, unknown>
-      limits?: Record<string, unknown>
+      data?: Record<string, unknown>;
+      limits?: Record<string, unknown>;
     }
-  | Record<string, unknown>
+  | Record<string, unknown>;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function normalizeExecutionLogsListResult(result: ExecutionLogsListResult): {
-  data: Array<Record<string, unknown>>
-  nextCursor?: string
-  limits?: Record<string, unknown>
+  data: Array<Record<string, unknown>>;
+  nextCursor?: string;
+  limits?: Record<string, unknown>;
 } {
   if (Array.isArray(result)) {
-    return { data: result }
+    return { data: result };
   }
 
   return {
     data: Array.isArray(result.data) ? result.data : [],
     nextCursor: result.nextCursor,
     limits: result.limits,
-  }
+  };
 }
 
 function normalizeExecutionLogDetailResult(result: ExecutionLogDetailResult): {
-  data: Record<string, unknown>
-  limits?: Record<string, unknown>
+  data: Record<string, unknown>;
+  limits?: Record<string, unknown>;
 } {
   if (isRecord(result) && isRecord(result.data)) {
     return {
       data: result.data,
       limits: isRecord(result.limits) ? result.limits : undefined,
-    }
+    };
   }
 
   return {
     data: isRecord(result) ? result : {},
-  }
+  };
 }
 
 /**
@@ -206,11 +205,11 @@ export async function getExecutionLogs(
   client: SimApiClient,
   input: GetExecutionLogsInput
 ): Promise<GetExecutionLogsOutput> {
-  const logger = getLogger()
+  const logger = getLogger();
 
   try {
-    validateRequiredParams({ workspaceId: input.workspaceId }, GET_EXECUTION_LOGS_TOOL_NAME)
-    validateLogFilters(input)
+    validateRequiredParams({ workspaceId: input.workspaceId }, GET_EXECUTION_LOGS_TOOL_NAME);
+    validateLogFilters(input);
 
     logger.debug('Fetching execution logs', {
       operation: 'get_execution_logs',
@@ -218,31 +217,31 @@ export async function getExecutionLogs(
       workflowId: input.workflowId,
       executionId: input.executionId,
       level: input.level,
-    })
+    });
 
-    const result = normalizeExecutionLogsListResult(await client.getLogs(input))
-    const logs = result.data
+    const result = normalizeExecutionLogsListResult(await client.getLogs(input));
+    const logs = result.data;
 
     logger.debug('Execution logs fetched', {
       operation: 'get_execution_logs',
       workspaceId: input.workspaceId,
       count: logs.length,
       hasMore: !!result.nextCursor,
-    })
+    });
 
     return {
       count: logs.length,
       data: logs,
       nextCursor: result.nextCursor,
       limits: result.limits,
-    }
+    };
   } catch (error) {
     logger.error('Failed to fetch execution logs', {
       operation: 'get_execution_logs',
       workspaceId: input.workspaceId,
       error: error instanceof Error ? error.message : 'Unknown error',
-    })
-    throw mapLogToolError(error, 'list', input.workspaceId)
+    });
+    throw mapLogToolError(error, 'list', input.workspaceId);
   }
 }
 
@@ -253,14 +252,14 @@ export async function getExecutionLogs(
 /**
  * Tool name constant
  */
-export const GET_EXECUTION_LOG_DETAIL_TOOL_NAME = 'get_execution_log_detail'
+export const GET_EXECUTION_LOG_DETAIL_TOOL_NAME = 'get_execution_log_detail';
 
 /**
  * Tool description for MCP registration
  */
 export const GET_EXECUTION_LOG_DETAIL_DESCRIPTION =
   'Get full detail for a specific execution log by its ID. Returns comprehensive log data including ' +
-  'execution data, workflow context, cost breakdown, trace spans, and final output.'
+  'execution data, workflow context, cost breakdown, trace spans, and final output.';
 
 /**
  * JSON Schema for get_execution_log_detail input (for MCP registration)
@@ -274,22 +273,22 @@ export const getExecutionLogDetailInputSchema = {
     },
   },
   required: ['logId'],
-}
+};
 
 /**
  * Input type for get_execution_log_detail
  */
 export interface GetExecutionLogDetailInput {
-  logId: string
+  logId: string;
 }
 
 /**
  * Output type for get_execution_log_detail
  */
 export interface GetExecutionLogDetailOutput {
-  summary: Record<string, unknown>
-  data: Record<string, unknown>
-  limits?: Record<string, unknown>
+  summary: Record<string, unknown>;
+  data: Record<string, unknown>;
+  limits?: Record<string, unknown>;
 }
 
 function validateLogFilters(input: GetExecutionLogsInput): void {
@@ -300,7 +299,7 @@ function validateLogFilters(input: GetExecutionLogsInput): void {
         tool: GET_EXECUTION_LOGS_TOOL_NAME,
         details: input.details ?? 'basic',
       }
-    )
+    );
   }
 }
 
@@ -315,18 +314,18 @@ export async function getExecutionLogDetail(
   client: SimApiClient,
   input: GetExecutionLogDetailInput
 ): Promise<GetExecutionLogDetailOutput> {
-  const logger = getLogger()
+  const logger = getLogger();
 
   try {
-    validateRequiredParams({ logId: input.logId }, GET_EXECUTION_LOG_DETAIL_TOOL_NAME)
+    validateRequiredParams({ logId: input.logId }, GET_EXECUTION_LOG_DETAIL_TOOL_NAME);
 
     logger.debug('Fetching execution log detail', {
       operation: 'get_execution_log_detail',
       logId: input.logId,
-    })
+    });
 
-    const result = normalizeExecutionLogDetailResult(await client.getLogDetail(input.logId))
-    const data = result.data ?? {}
+    const result = normalizeExecutionLogDetailResult(await client.getLogDetail(input.logId));
+    const data = result.data ?? {};
     const summary = {
       id: data.id,
       workflowId: data.workflowId,
@@ -336,26 +335,26 @@ export async function getExecutionLogDetail(
       startedAt: data.startedAt,
       endedAt: data.endedAt,
       totalDurationMs: data.totalDurationMs,
-    }
+    };
 
     logger.debug('Execution log detail fetched', {
       operation: 'get_execution_log_detail',
       logId: input.logId,
       hasData: !!result.data,
-    })
+    });
 
     return {
       summary,
       data,
       limits: result.limits,
-    }
+    };
   } catch (error) {
     logger.error('Failed to fetch execution log detail', {
       operation: 'get_execution_log_detail',
       logId: input.logId,
       error: error instanceof Error ? error.message : 'Unknown error',
-    })
-    throw mapLogToolError(error, 'detail', undefined, input.logId)
+    });
+    throw mapLogToolError(error, 'detail', undefined, input.logId);
   }
 }
 
@@ -368,19 +367,19 @@ function mapLogToolError(
   const mappedError = mapAuthModeError(
     error,
     mode === 'list' ? GET_EXECUTION_LOGS_TOOL_NAME : GET_EXECUTION_LOG_DETAIL_TOOL_NAME
-  )
+  );
 
   if (isSimApiErrorWithStatus(mappedError, 404) && logId) {
-    return new NotFoundError('Execution log', logId)
+    return new NotFoundError('Execution log', logId);
   }
 
   if (isSimApiErrorWithStatus(mappedError, 400) && workspaceId) {
-    const message = mappedError instanceof Error ? mappedError.message : 'Invalid log request'
+    const message = mappedError instanceof Error ? mappedError.message : 'Invalid log request';
     return new ValidationError(message, {
       tool: GET_EXECUTION_LOGS_TOOL_NAME,
       workspaceId,
-    })
+    });
   }
 
-  return mappedError
+  return mappedError;
 }

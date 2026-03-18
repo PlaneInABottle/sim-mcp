@@ -501,6 +501,94 @@ describe('Workflow Tools', () => {
       });
     });
 
+    it('should preserve raw object payloads for run-from-block responses', async () => {
+      const rawPayload = {
+        executionId: 'exec-raw-object',
+        status: 'paused',
+        snapshotId: 'snap-123',
+      };
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => rawPayload as never,
+      });
+
+      const result = await runFromBlock(mockClient, {
+        workflowId: 'wf-123',
+        startBlockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        startBlockId: 'block-2',
+        output: rawPayload,
+        error: undefined,
+        metadata: undefined,
+      });
+    });
+
+    it('should preserve raw error objects as output for partial execution tools', async () => {
+      const rawPayload = { error: 'backend debug payload' };
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => rawPayload as never,
+      });
+
+      const result = await runFromBlock(mockClient, {
+        workflowId: 'wf-123',
+        startBlockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        startBlockId: 'block-2',
+        output: rawPayload,
+        error: undefined,
+        metadata: undefined,
+      });
+    });
+
+    it('should preserve raw metadata objects as output for partial execution tools', async () => {
+      const rawPayload = { metadata: { note: 'partial state only' } };
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => rawPayload as never,
+      });
+
+      const result = await runBlock(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        blockId: 'block-2',
+        output: rawPayload,
+        error: undefined,
+        metadata: undefined,
+      });
+    });
+
+    it('should preserve raw array payloads as output for partial execution tools', async () => {
+      const rawPayload = ['step-1', { status: 'paused' }];
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => rawPayload as never,
+      });
+
+      const result = await runWorkflowUntilBlock(mockClient, {
+        workflowId: 'wf-123',
+        stopAfterBlockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        stopAfterBlockId: 'block-2',
+        output: rawPayload,
+        error: undefined,
+        metadata: undefined,
+      });
+    });
+
     it('should run a single block using thin wrapper controls', async () => {
       const mockClient = createMockSimApiClient();
 
@@ -524,6 +612,46 @@ describe('Workflow Tools', () => {
           startBlockId: 'block-2',
           executionId: 'exec-prev',
         },
+      });
+    });
+
+    it('should wrap raw string payloads for run-block responses', async () => {
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => 'raw execution payload' as never,
+      });
+
+      const result = await runBlock(mockClient, {
+        workflowId: 'wf-123',
+        blockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        blockId: 'block-2',
+        output: 'raw execution payload',
+        error: undefined,
+        metadata: undefined,
+      });
+    });
+
+    it('should wrap raw primitive payloads for run-until-block responses', async () => {
+      const mockClient = createMockSimApiClient({
+        executeWorkflow: async () => 42 as never,
+      });
+
+      const result = await runWorkflowUntilBlock(mockClient, {
+        workflowId: 'wf-123',
+        stopAfterBlockId: 'block-2',
+      });
+
+      expect(result).toEqual({
+        success: true,
+        executionId: undefined,
+        stopAfterBlockId: 'block-2',
+        output: 42,
+        error: undefined,
+        metadata: undefined,
       });
     });
 

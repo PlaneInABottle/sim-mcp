@@ -5,7 +5,7 @@ import { validateRequiredParams } from './shared.js';
 export const GET_WORKFLOW_STATUS_TOOL_NAME = 'get_workflow_status';
 
 export const GET_WORKFLOW_STATUS_DESCRIPTION =
-  'Get workflow deployment status including deployed state, deployment timestamp, publication flag, and whether draft changes need redeployment.';
+  'Get workflow deployment status, including whether it is deployed, when it was deployed, whether it is published, and whether draft changes need redeployment.';
 
 export const getWorkflowStatusInputSchema = {
   type: 'object',

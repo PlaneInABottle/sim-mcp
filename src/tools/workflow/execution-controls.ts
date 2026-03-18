@@ -127,7 +127,7 @@ export const runFromBlockInputSchema = {
 };
 
 export const RUN_BLOCK_DESCRIPTION =
-  'Run a single block in isolation using a prior execution snapshot. If executionId is omitted, the backend uses the latest snapshot for this workflow.';
+  'Run a workflow starting from a specific block and stop after that block completes, using a prior execution snapshot. The returned `output` reflects the execution result at that stop point and may be empty for non-terminal blocks. If executionId is omitted, the backend uses the latest snapshot for this workflow.';
 
 export const runBlockInputSchema = {
   type: 'object',
@@ -194,6 +194,44 @@ function buildPartialExecutionResult<TTarget extends Record<string, string>>(
   };
 }
 
+function isExecutionEnvelope(result: unknown): result is Record<string, unknown> {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    !Array.isArray(result) &&
+    typeof (result as Record<string, unknown>).success === 'boolean'
+  );
+}
+
+function normalizePartialExecutionResult(result: unknown): PartialExecutionOutput {
+  if (!isExecutionEnvelope(result)) {
+    return {
+      success: true,
+      output: result,
+    };
+  }
+
+  const record = result as Record<string, unknown> & { success: boolean };
+  const metadataValue = record.metadata as Record<string, unknown> | undefined;
+  const metadata =
+    typeof metadataValue === 'object' && metadataValue !== null && !Array.isArray(metadataValue)
+      ? {
+          duration: typeof metadataValue.duration === 'number' ? metadataValue.duration : undefined,
+          startTime:
+            typeof metadataValue.startTime === 'string' ? metadataValue.startTime : undefined,
+          endTime: typeof metadataValue.endTime === 'string' ? metadataValue.endTime : undefined,
+        }
+      : undefined;
+
+  return {
+    success: record.success,
+    executionId: typeof record.executionId === 'string' ? record.executionId : undefined,
+    output: Object.prototype.hasOwnProperty.call(record, 'output') ? record.output : undefined,
+    error: typeof record.error === 'string' ? record.error : undefined,
+    metadata,
+  };
+}
+
 export async function runWorkflowUntilBlock(
   client: SimApiClient,
   input: RunWorkflowUntilBlockInput
@@ -220,7 +258,9 @@ export async function runWorkflowUntilBlock(
       stopAfterBlockId: input.stopAfterBlockId,
     });
 
-    return buildPartialExecutionResult(result, { stopAfterBlockId: input.stopAfterBlockId });
+    return buildPartialExecutionResult(normalizePartialExecutionResult(result), {
+      stopAfterBlockId: input.stopAfterBlockId,
+    });
   } catch (error) {
     logger.error('Failed to execute workflow until block', {
       operation: RUN_WORKFLOW_UNTIL_BLOCK_TOOL_NAME,
@@ -262,7 +302,9 @@ export async function runFromBlock(
       sourceExecutionId: input.executionId ?? 'latest',
     });
 
-    return buildPartialExecutionResult(result, { startBlockId: input.startBlockId });
+    return buildPartialExecutionResult(normalizePartialExecutionResult(result), {
+      startBlockId: input.startBlockId,
+    });
   } catch (error) {
     logger.error('Failed to execute workflow from block', {
       operation: RUN_FROM_BLOCK_TOOL_NAME,
@@ -306,7 +348,9 @@ export async function runBlock(
       sourceExecutionId: input.executionId ?? 'latest',
     });
 
-    return buildPartialExecutionResult(result, { blockId: input.blockId });
+    return buildPartialExecutionResult(normalizePartialExecutionResult(result), {
+      blockId: input.blockId,
+    });
   } catch (error) {
     logger.error('Failed to execute single block', {
       operation: RUN_BLOCK_TOOL_NAME,

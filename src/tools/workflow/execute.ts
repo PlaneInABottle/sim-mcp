@@ -18,9 +18,8 @@ export const EXECUTE_WORKFLOW_TOOL_NAME = 'execute_workflow';
  * Tool description for MCP registration
  */
 export const EXECUTE_WORKFLOW_DESCRIPTION =
-  'Execute a workflow and return the result. Sends input data to the workflow ' +
-  'and returns the execution output. By default uses draft workflow state so deployment is not required. ' +
-  'For API-triggered workflows, the input object fields are passed directly as the trigger payload.';
+  'Execute a workflow and return its execution result. Accepts an optional `input` object ' +
+  'and, by default, runs against draft workflow state so deployment is not required.';
 
 /**
  * JSON Schema for execute workflow input (for MCP registration)
@@ -34,13 +33,13 @@ export const executeWorkflowInputSchema = {
     },
     input: {
       type: 'object',
-      description:
-        'Input data to pass to the workflow. For API-triggered workflows, these fields become the trigger payload.',
+      description: 'Optional input object to send as the workflow execution input payload.',
     },
     triggerType: {
       type: 'string',
       enum: ['api', 'manual', 'schedule', 'chat', 'webhook', 'mcp', 'a2a'],
-      description: 'The trigger type for this execution. Defaults to "api" for API key auth.',
+      description:
+        'Optional trigger type for this execution. If omitted, backend default behavior applies.',
     },
     useDraftState: {
       type: 'boolean',
